@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PBS TMA — Sistem Laporan Insiden</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+:root{
+  --red:#C0392B;--red-dark:#922B21;--red-light:#F1948A;
+  --navy:#1B2A4A;--navy-light:#2C3E6B;
+  --bg:#F0F2F5;--white:#fff;--gray:#6B7280;--gray-light:#E5E7EB;
+  --text:#1F2937;--success:#059669;--warn:#D97706;
+  --shadow:0 2px 8px rgba(0,0,0,.12);--shadow-lg:0 8px 24px rgba(0,0,0,.16)
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── CLOUD STATUS BAR ── */
+.cloud-bar{background:#1E3A5F;color:#fff;text-align:center;padding:6px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px}
+.cloud-dot{width:8px;height:8px;border-radius:50%;background:#6B7280;flex-shrink:0;transition:background .3s}
+.cloud-dot.connected{background:#22C55E}
+.cloud-dot.connecting{background:#F59E0B;animation:pulse .8s infinite}
+.cloud-dot.error{background:#EF4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 34px);padding:20px}
+.login-box{background:var(--white);border-radius:18px;box-shadow:var(--shadow-lg);padding:36px 30px;width:100%;max-width:380px;text-align:center}
+.fire{font-size:56px;margin-bottom:12px}
+.login-box h2{color:var(--navy);font-size:22px;margin-bottom:4px}
+.login-box p{color:var(--gray);font-size:13px;margin-bottom:24px}
+.lf{width:100%;padding:11px 14px;border:1.5px solid var(--gray-light);border-radius:9px;font-size:14px;margin-bottom:10px;outline:none;transition:border-color .2s;font-family:inherit}
+.lf:focus{border-color:var(--red)}
+.lb{width:100%;padding:12px;background:linear-gradient(135deg,var(--red-dark),var(--red));color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.lb:hover{opacity:.9}
+.lb:disabled{opacity:.5;cursor:not-allowed}
+.lerr{background:#FEF2F2;color:var(--red-dark);border-radius:8px;padding:9px 12px;font-size:13px;margin-top:10px;display:none}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(135deg,var(--navy) 0%,var(--red-dark) 100%);color:#fff;position:sticky;top:0;z-index:200;box-shadow:var(--shadow-lg)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;max-width:960px;margin:0 auto;flex-wrap:wrap;gap:8px}
+.hdr-logo{display:flex;align-items:center;gap:10px}
+.hdr-logo .ico{font-size:26px}
+.hdr-logo h1{font-size:14px;font-weight:700}
+.hdr-logo p{font-size:11px;opacity:.75}
+.hdr-nav{display:flex;gap:6px;flex-wrap:wrap}
+.nb{padding:6px 13px;border-radius:18px;border:1.5px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:12px;cursor:pointer;transition:all .2s;font-weight:500}
+.nb.active,.nb:hover{background:rgba(255,255,255,.2);border-color:#fff}
+.nb.danger{border-color:rgba(255,120,120,.6)}
+
+/* ── LAYOUT ── */
+.app-wrap{display:none}
+.main{max-width:960px;margin:0 auto;padding:18px 14px 50px}
+.page{display:none}.page.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.ch{padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;color:#fff}
+.ch.navy{background:var(--navy)}.ch.red{background:var(--red)}.ch.teal{background:#0F766E}.ch.orange{background:#C2410C}.ch.purple{background:#6D28D9}
+.cb{padding:14px 16px}
+
+/* ── INCIDENT GRID ── */
+.inc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:7px}
+.inc-btn{border:2px solid var(--gray-light);background:var(--white);border-radius:10px;padding:9px 7px;cursor:pointer;text-align:center;transition:all .18s}
+.inc-btn .ii{font-size:20px;display:block;margin-bottom:3px}
+.inc-btn .iz{font-size:11.5px;color:var(--gray);font-weight:500}
+.inc-btn .im{font-size:10px;color:#9CA3AF;margin-top:1px}
+.inc-btn:hover{border-color:var(--red-light);background:#FEF2F2}
+.inc-btn.sel{border-color:var(--red);background:#FEF2F2;box-shadow:0 0 0 2px rgba(192,57,43,.2)}
+.inc-btn.sel .iz{color:var(--red);font-weight:700}
+
+/* ── BUTTONS ── */
+.tr-btn{padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap;font-weight:600;transition:background .2s}
+.tr-btn:hover{background:var(--navy-light)}
+.tr-btn.green{background:var(--success)}.tr-btn.green:hover{background:#047857}
+.tr-btn.red-btn{background:var(--red)}.tr-btn.red-btn:hover{background:var(--red-dark)}
+.tr-btn:disabled{opacity:.5;cursor:not-allowed}
+.tr-status{font-size:12px;color:var(--gray);margin-top:5px;min-height:18px;padding:4px 0}
+
+/* ── FORM ── */
+.fr{display:flex;align-items:center;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.fl{min-width:88px;font-size:12.5px;color:var(--gray);font-weight:500;flex-shrink:0}
+.fi{flex:1;min-width:120px;border:1.5px solid var(--gray-light);border-radius:8px;padding:8px 11px;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;font-family:inherit;background:#fff}
+.fi:focus{border-color:var(--red)}
+.fi[type="time"]{cursor:pointer;max-width:130px}
+.fi[type="date"]{cursor:pointer}
+.now-btn{padding:7px 11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.now-btn:hover{background:var(--navy-light)}
+
+/* ── PHOTO UPLOAD ── */
+.photo-zone{border:2px dashed var(--gray-light);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFAFA;position:relative;overflow:hidden}
+.photo-zone:hover{border-color:var(--navy);background:#EEF2FF}
+.photo-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.pz-icon{font-size:32px;margin-bottom:6px}
+.pz-txt{font-size:13px;color:var(--gray)}
+.pz-sub{font-size:11px;color:#9CA3AF;margin-top:3px}
+.photo-preview{max-width:100%;max-height:180px;border-radius:8px;margin:10px 0;display:block}
+.ai-result{background:#F0FDF4;border:1px solid #A7F3D0;border-radius:9px;padding:12px;margin-top:8px}
+.ar-label{font-size:11px;color:var(--success);font-weight:700;margin-bottom:4px}
+.ar-val{font-size:13px;color:var(--text);font-weight:600}
+.ai-loading{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:9px;padding:12px;margin-top:10px;font-size:13px;color:#1D4ED8;display:flex;align-items:center;gap:8px}
+.spin{display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── VEHICLE ── */
+.v-section{margin-bottom:12px;border:1px solid var(--gray-light);border-radius:10px;padding:12px}
+.v-label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px}
+.rr{display:flex;align-items:flex-start;gap:7px;margin-bottom:6px}
+.rb{min-width:50px;padding:3px 7px;border-radius:5px;font-size:11px;font-weight:700;text-align:center;flex-shrink:0;margin-top:2px}
+.rb.sv{background:#FEF3C7;color:#92400E}.rb.dr{background:#DBEAFE;color:#1E40AF}.rb.mb{background:#D1FAE5;color:#065F46}
+.msw{flex:1;display:flex;flex-wrap:wrap;gap:5px}
+.st{padding:3px 9px;border-radius:14px;font-size:11.5px;cursor:pointer;border:1.5px solid;transition:all .15s;user-select:none}
+.st.sv-t{border-color:#D97706;color:#92400E;background:#FEF3C7}
+.st.dr-t{border-color:#3B82F6;color:#1E40AF;background:#DBEAFE}
+.st.mb-t{border-color:#10B981;color:#065F46;background:#D1FAE5}
+.st.a-sv{background:#D97706;color:#fff;border-color:#D97706}
+.st.a-dr{background:#3B82F6;color:#fff;border-color:#3B82F6}
+.st.a-mb{background:#10B981;color:#fff;border-color:#10B981}
+
+/* ── OUTPUT ── */
+.out-box{background:#0D1B2A;color:#E2E8F0;border-radius:10px;padding:16px;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word;min-height:180px;max-height:450px;overflow-y:auto}
+.copy-btn{width:100%;margin-top:10px;padding:13px;background:var(--success);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.copy-btn:hover{background:#047857}.copy-btn.done{background:#374151}
+.gen-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--red-dark),var(--red));color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin:14px 0 0;box-shadow:0 4px 12px rgba(192,57,43,.35);transition:all .2s}
+.gen-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(192,57,43,.4)}
+.gen-btn:disabled{opacity:.5;transform:none;cursor:not-allowed}
+
+/* ── ADMIN ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:14px}
+.stat-c{background:var(--white);border-radius:10px;padding:14px;box-shadow:var(--shadow);text-align:center}
+.stat-n{font-size:32px;font-weight:800;color:var(--red)}.stat-l{font-size:11px;color:var(--gray);margin-top:2px}
+.a-sec{background:var(--white);border-radius:12px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.a-sec h3{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--gray-light);padding-bottom:6px}
+.tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tag-a{padding:5px 11px;border-radius:15px;background:var(--bg);font-size:12px;display:flex;align-items:center;gap:6px;border:1px solid var(--gray-light)}
+.tag-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 2px;line-height:1;font-weight:700}
+.add-row{display:flex;gap:7px;flex-wrap:wrap}
+.ai-inp{flex:1;min-width:100px;padding:8px 11px;border:1.5px solid var(--gray-light);border-radius:8px;font-size:13px;outline:none;font-family:inherit;background:#fff}
+.ai-inp:focus{border-color:var(--navy)}
+.ab{padding:8px 15px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;white-space:nowrap}
+.ab:hover{background:var(--navy-light)}
+
+/* ── MEMBER TABLE ── */
+.mem-table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+.mem-table th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:12px;white-space:nowrap}
+.mem-table td{padding:7px 9px;border-bottom:1px solid var(--gray-light);vertical-align:middle}
+.mem-table tr:hover td{background:#F9FAFB}
+.edit-inp{width:100%;padding:5px 8px;border:1px solid var(--gray-light);border-radius:6px;font-size:12px;outline:none;font-family:inherit;background:#fff}
+.edit-inp:focus{border-color:var(--navy)}
+.sm-btn{padding:4px 9px;border:none;border-radius:5px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap}
+.sm-btn.blue{background:#DBEAFE;color:#1E40AF}.sm-btn.red{background:#FEE2E2;color:var(--red-dark)}.sm-btn.green{background:#D1FAE5;color:#065F46}
+
+/* ── BULK ADD ── */
+.bulk-area{width:100%;min-height:110px;padding:10px;border:1.5px solid var(--gray-light);border-radius:9px;font-size:13px;font-family:'Courier New',monospace;outline:none;resize:vertical;line-height:1.6;background:#fff}
+.bulk-area:focus{border-color:var(--navy)}
+.bulk-note{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400E;margin-bottom:10px;line-height:1.7}
+
+/* ── CALENDAR ── */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav h3{font-size:15px;font-weight:700;color:var(--navy)}
+.cal-nav-btn{padding:6px 14px;border:1.5px solid var(--gray-light);background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.cal-nav-btn:hover{border-color:var(--navy);color:var(--navy)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day-hdr{text-align:center;font-size:11px;font-weight:700;color:var(--gray);padding:4px 0}
+.cal-day-hdr.sun{color:var(--red)}.cal-day-hdr.sat{color:#3B82F6}
+.cal-cell{min-height:58px;border-radius:8px;border:1px solid var(--gray-light);background:#fff;padding:4px;cursor:default;transition:all .15s}
+.cal-cell.has-inc{background:#FFF7ED;border-color:#FED7AA;cursor:pointer}
+.cal-cell.has-inc:hover{background:#FFEDD5;border-color:#F97316}
+.cal-cell.today{border-color:var(--red);background:#FEF2F2}
+.cal-cell.empty{background:transparent;border-color:transparent}
+.cal-cell .cn{font-size:12px;font-weight:600;color:var(--gray)}
+.cal-cell.today .cn{color:var(--red);font-weight:800}
+.cal-dot{width:7px;height:7px;border-radius:50%;background:var(--red);margin:2px auto 0;display:block}
+.cal-count{font-size:10px;color:var(--red);font-weight:700;text-align:center;margin-top:1px}
+
+/* ── POPUP ── */
+.cal-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.28);z-index:500;width:92%;max-width:440px;max-height:82vh;overflow-y:auto}
+.cal-popup-hdr{background:var(--navy);color:#fff;padding:12px 16px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;position:sticky;top:0}
+.cal-popup-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0 4px}
+.cal-popup-body{padding:14px 16px}
+.inc-item{padding:10px 12px;border-radius:9px;background:var(--bg);margin-bottom:8px;border-left:3px solid var(--red)}
+.inc-item .it{font-size:11px;color:var(--gray)}.inc-item .ia{font-size:13px;font-weight:600;color:var(--navy);margin:2px 0}
+.inc-item .ib2{font-size:11px;color:var(--gray)}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:499;display:none}
+
+/* ── LOG TABLE ── */
+.log-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:480px}
+.log-tbl th{background:var(--navy);color:#fff;padding:7px 9px;text-align:left}
+.log-tbl td{padding:6px 9px;border-bottom:1px solid var(--gray-light)}
+.log-tbl tr:hover td{background:#F9FAFB}
+
+/* ── MISC ── */
+.dvd{height:1px;background:var(--gray-light);margin:11px 0}
+.no-rec{text-align:center;color:var(--gray);padding:24px 0;font-size:13px}
+.tabs-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab-pill{padding:7px 15px;border-radius:20px;border:1.5px solid var(--gray-light);background:#fff;font-size:13px;cursor:pointer;font-weight:500;color:var(--gray);transition:all .2s}
+.tab-pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.info-box{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:9px;padding:11px 13px;font-size:12px;color:#1E40AF;margin-bottom:12px;line-height:1.6}
+.warn-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:9px;padding:11px 13px;font-size:12px;color:#92400E;margin-bottom:12px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- Cloud status -->
+<div class="cloud-bar">
+  <span class="cloud-dot" id="cloudDot"></span>
+  <span id="cloudStatus">正在连接云端数据库...</span>
+</div>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <div class="fire">🚒</div>
+    <h2>PBS TMA 报告系统</h2>
+    <p>Persatuan Bomba Sukarela Taman Mount Austin</p>
+    <input class="lf" id="lu" placeholder="用户名 / Username" autocomplete="username"/>
+    <input class="lf" id="lp" type="password" placeholder="密码 / Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="lb" id="loginBtn" onclick="doLogin()">🔐 登录 / Log In</button>
+    <div class="lerr" id="lerr">用户名或密码错误，请重试。</div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div class="app-wrap" id="appWrap">
+<div class="hdr">
+  <div class="hdr-in">
+    <div class="hdr-logo">
+      <span class="ico">🚒</span>
+      <div><h1>PBS TMA 事故报告系统</h1><p id="hdrUser">Persatuan Bomba Sukarela Taman Mount Austin</p></div>
+    </div>
+    <div class="hdr-nav">
+      <button class="nb active" id="tnMember" onclick="switchTab('member')">📝 填写报告</button>
+      <button class="nb" id="tnAdmin" onclick="switchTab('admin')" style="display:none">⚙️ 管理后台</button>
+      <button class="nb danger" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══ MEMBER PAGE ══ -->
+<div class="page active" id="pageMember">
+
+  <!-- 照片识别 -->
+  <div class="card">
+    <div class="ch orange">📷 照片识别 — 自动提取地址 & 时间</div>
+    <div class="cb">
+      <div class="info-box">📌 上传现场照片，AI 将自动识别<strong>抵达现场时间</strong>及<strong>事故地址</strong>，识别后一键填入表单。</div>
+      <div class="photo-zone" id="photoZone">
+        <input type="file" accept="image/*" id="photoInput" onchange="handlePhotoUpload(event)"/>
+        <div class="pz-icon">📷</div>
+        <div class="pz-txt">点击上传现场照片</div>
+        <div class="pz-sub">支持 JPG · PNG · HEIC · 最大 10MB</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" style="display:none"/>
+      <div id="aiLoading" class="ai-loading" style="display:none"><span class="spin">⏳</span> AI 正在识别照片内容，请稍候...</div>
+      <div id="aiResultBox" style="display:none">
+        <div class="ai-result"><div class="ar-label">📍 识别到的地址</div><div class="ar-val" id="aiAddr">—</div></div>
+        <div class="ai-result" style="margin-top:8px"><div class="ar-label">⏰ 识别到的时间（抵达现场）</div><div class="ar-val" id="aiTime">—</div></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="tr-btn green" onclick="applyPhotoData()">✅ 填入表单</button>
+          <button class="tr-btn" onclick="resetPhoto()">🔄 重新上传</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 事故类型 -->
+  <div class="card">
+    <div class="ch red">🔥 事故类型 <span style="font-weight:400;font-size:11px;opacity:.8">（点击选择）</span></div>
+    <div class="cb">
+      <div class="inc-grid" id="incGrid"></div>
+      <div class="dvd"></div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:7px">➕ 临时添加新案件类型（中文 + 马来文手动输入）</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <input id="newCaseZh" class="ai-inp" placeholder="中文案件名称，例：化学品泄漏"/>
+        <input id="newCaseMs" class="ai-inp" placeholder="马来文，例：Tumpahan Kimia"/>
+        <input id="newCaseIcon" class="ai-inp" placeholder="图标" style="max-width:60px;text-align:center"/>
+        <button class="tr-btn green" onclick="addCaseFromTranslate()">✓ 添加</button>
+      </div>
+      <div class="tr-status" id="trStatus"></div>
+    </div>
+  </div>
+
+  <!-- 基本资料 -->
+  <div class="card">
+    <div class="ch navy">📋 基本资料</div>
+    <div class="cb">
+      <div class="fr"><span class="fl">事故日期</span><input class="fi" type="date" id="incDate"/><button class="now-btn" onclick="setToday()">今天</button></div>
+      <div class="fr"><span class="fl">报案人</span><input class="fi" id="callerName" placeholder="Nama pemanggil"/></div>
+      <div class="fr"><span class="fl">联络号码</span><input class="fi" id="callerPhone" placeholder="Nombor telefon" type="tel"/></div>
+      <div class="fr"><span class="fl">事故地址</span><input class="fi" id="address" placeholder="Alamat kejadian"/></div>
+      <div class="fr"><span class="fl">距离</span><input class="fi" id="distance" placeholder="cth: 3.2 km" style="max-width:130px"/></div>
+      <div class="dvd"></div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:6px">📝 事故详情（Maklumat Kejadian — 请输入马来文）</div>
+      <textarea class="fi" id="maklumat" rows="4" placeholder="Huraian kejadian dalam Bahasa Malaysia..."></textarea>
+    </div>
+  </div>
+
+  <!-- 时间记录 -->
+  <div class="card">
+    <div class="ch teal">⏱ 时间记录 <span style="font-weight:400;font-size:11px;opacity:.8">（24小时制 HH:MM）</span></div>
+    <div class="cb" id="timeSection"></div>
+  </div>
+
+  <!-- 车辆人员 -->
+  <div class="card">
+    <div class="ch navy">🚒 出队车辆与人员</div>
+    <div class="cb" id="vehicleSection"></div>
+  </div>
+
+  <button class="gen-btn" id="genBtn" onclick="generateReport()">⚡ 生成报告 / Jana Laporan</button>
+
+  <div id="outputSection" style="display:none;margin-top:14px">
+    <div class="card">
+      <div class="ch" style="background:var(--success)">✅ 报告已生成 — 复制后发送 WhatsApp</div>
+      <div class="cb">
+        <div class="out-box" id="outputBox"></div>
+        <button class="copy-btn" id="copyBtn" onclick="copyReport()">📋 复制报告 / Salin Laporan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN PAGE ══ -->
+<div class="page" id="pageAdmin">
+  <div id="adminLock" style="text-align:center;padding:50px;color:var(--gray)"><div style="font-size:48px">🔒</div><p>仅限管理员访问</p></div>
+  <div id="adminContent" style="display:none">
+    <div class="tabs-row">
+      <button class="tab-pill active" onclick="switchAdminTab('overview',this)">📊 总览</button>
+      <button class="tab-pill" onclick="switchAdminTab('members',this)">👥 队员管理</button>
+      <button class="tab-pill" onclick="switchAdminTab('incidents',this)">🔥 案件类型</button>
+      <button class="tab-pill" onclick="switchAdminTab('calendar',this)">📅 月份日历</button>
+      <button class="tab-pill" onclick="switchAdminTab('records',this)">📁 历史记录</button>
+      <button class="tab-pill" onclick="switchAdminTab('settings',this)">🔑 管理员设置</button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div id="atOverview">
+      <div class="stat-grid">
+        <div class="stat-c"><div class="stat-n" id="stTotal">—</div><div class="stat-l">总案件数</div></div>
+        <div class="stat-c"><div class="stat-n" id="stMembers">—</div><div class="stat-l">注册队员</div></div>
+        <div class="stat-c"><div class="stat-n" id="stMonth">—</div><div class="stat-l">本月案件</div></div>
+      </div>
+      <div class="a-sec"><h3>📊 案件类型统计</h3><div class="tag-list" id="incStats"><span style="color:#9CA3AF;font-size:12px">加载中...</span></div></div>
+    </div>
+
+    <!-- MEMBERS -->
+    <div id="atMembers" style="display:none">
+      <div class="a-sec">
+        <h3>👥 现有队员列表</h3>
+        <div style="overflow-x:auto"><table class="mem-table"><thead><tr><th>#</th><th>全名</th><th>用户名</th><th>密码</th><th>电话</th><th>操作</th></tr></thead><tbody id="memberTbody"></tbody></table></div>
+        <div class="no-rec" id="noMember" style="display:none">暂无队员</div>
+      </div>
+      <div class="a-sec">
+        <h3>➕ 添加单个队员</h3>
+        <div class="add-row" style="margin-bottom:8px">
+          <input class="ai-inp" id="nmName" placeholder="全名 Full Name"/>
+          <input class="ai-inp" id="nmUser" placeholder="用户名（登录用）" autocomplete="off"/>
+          <input class="ai-inp" id="nmPass" placeholder="密码" type="text"/>
+          <input class="ai-inp" id="nmPhone" placeholder="电话（选填）"/>
+        </div>
+        <button class="ab" onclick="addSingleMember()">➕ 添加</button>
+        <span id="addMemberMsg" class="tr-status"></span>
+      </div>
+      <div class="a-sec">
+        <h3>📋 批量注册队员</h3>
+        <div class="bulk-note">每行一个队员，格式：<strong>全名 , 用户名 , 密码 , 电话（选填）</strong><br>例：<code>Ahmad Fariz , fariz , pbs123 , 0123456789</code></div>
+        <textarea class="bulk-area" id="bulkArea" placeholder="Ahmad Fariz , fariz , pbs123&#10;Mohd Haziq , haziq , pbs123"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="ab" onclick="bulkAddMembers()">⚡ 批量注册</button>
+          <button class="ab" style="background:#6B7280" onclick="document.getElementById('bulkArea').value=''">清空</button>
+        </div>
+        <div id="bulkResult" class="tr-status"></div>
+      </div>
+    </div>
+
+    <!-- INCIDENT TYPES -->
+    <div id="atIncidents" style="display:none">
+      <div class="a-sec">
+        <h3>🔥 案件类型管理</h3>
+        <div class="tag-list" id="incAdminList"></div>
+        <div class="dvd"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px">➕ 添加新案件类型</div>
+        <div class="add-row" style="margin-bottom:8px">
+          <input class="ai-inp" id="aiZh" placeholder="中文名称"/>
+          <input class="ai-inp" id="aiMs" placeholder="马来文名称"/>
+          <input class="ai-inp" id="aiIcon" placeholder="图标" style="max-width:65px;text-align:center"/>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="ab" onclick="adminAddIncident()">➕ 添加</button>
+        </div>
+        <div class="tr-status" id="aiStatus"></div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div id="atCalendar" style="display:none">
+      <div class="a-sec">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calPrev()">◀ 上月</button>
+          <h3 id="calTitle"></h3>
+          <button class="cal-nav-btn" onclick="calNext()">下月 ▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+    </div>
+
+    <!-- RECORDS -->
+    <div id="atRecords" style="display:none">
+      <div class="a-sec">
+        <h3>📁 历史记录（云端同步）</h3>
+        <div style="overflow-x:auto"><table class="log-tbl"><thead><tr><th>#</th><th>日期时间</th><th>事故类型</th><th>地点</th><th>填报人</th><th>操作</th></tr></thead><tbody id="logTbody"></tbody></table></div>
+        <div class="no-rec" id="noRec" style="display:none">暂无记录</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="atSettings" style="display:none">
+      <!-- 我的账号 -->
+      <div class="a-sec">
+        <h3>🔑 我的管理员账号</h3>
+        <div class="info-box" id="myAccountInfo">—</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin:6px 0 8px">修改用户名 / 密码（需输入旧密码验证）</div>
+        <div class="fr"><span class="fl">旧密码</span><input class="fi" id="chkOldPass" type="password" placeholder="请输入当前密码"/></div>
+        <div class="fr"><span class="fl">新用户名</span><input class="fi" id="chkNewUser" placeholder="留空则不修改用户名"/></div>
+        <div class="fr"><span class="fl">新密码</span><input class="fi" id="chkNewPass" type="password" placeholder="留空则不修改密码"/></div>
+        <div class="fr"><span class="fl">确认新密码</span><input class="fi" id="chkNewPass2" type="password" placeholder="再次输入新密码"/></div>
+        <button class="ab" onclick="changeMyCredentials()">💾 保存修改</button>
+        <div id="chkMsg" class="tr-status"></div>
+        <div class="warn-box" style="margin-top:10px">⚠️ 修改用户名或密码后，请用新的信息重新登录。系统会自动保存，不会丢失数据。</div>
+      </div>
+
+      <!-- 管理员列表（仅主管理员可见） -->
+      <div class="a-sec" id="superAdminSection">
+        <h3>👑 管理其他管理员（仅主管理员）</h3>
+        <div style="overflow-x:auto"><table class="mem-table"><thead><tr><th>#</th><th>名称</th><th>用户名</th><th>密码</th><th>权限</th><th>操作</th></tr></thead><tbody id="adminTbody"></tbody></table></div>
+        <div class="dvd"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px">➕ 添加新管理员</div>
+        <div class="add-row" style="margin-bottom:8px">
+          <input class="ai-inp" id="naName" placeholder="名称（如：副队长）"/>
+          <input class="ai-inp" id="naUser" placeholder="用户名（登录用）" autocomplete="off"/>
+          <input class="ai-inp" id="naPass" placeholder="密码" type="text"/>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input type="checkbox" id="naSuper" style="width:16px;height:16px"/>
+          <label for="naSuper" style="font-size:12px;color:var(--gray)">设为主管理员（可管理其他管理员）</label>
+        </div>
+        <button class="ab" onclick="addAdmin()">➕ 添加管理员</button>
+        <div id="addAdminMsg" class="tr-status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div></div>
+
+<div class="overlay" id="overlay" onclick="closePopup()"></div>
+<div class="cal-popup" id="calPopup" style="display:none">
+  <div class="cal-popup-hdr">
+    <span id="popupTitle">案件详情</span>
+    <button class="cal-popup-close" onclick="closePopup()">✕</button>
+  </div>
+  <div class="cal-popup-body" id="popupBody"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  🔥 FIREBASE CONFIG — PBS TMA 专属配置（已连接云端）
+// ════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDiavEZXA9DDImxhQQI2inwYiZMSFTQeGk",
+  authDomain: "pbs-tma-2d954.firebaseapp.com",
+  databaseURL: "https://pbs-tma-2d954-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pbs-tma-2d954",
+  storageBucket: "pbs-tma-2d954.firebasestorage.app",
+  messagingSenderId: "1016475075785",
+  appId: "1:1016475075785:web:20a560269def1eb2e93918"
+};
+
+// ════════════════════════════════════════════════════
+//  FIREBASE INIT & CLOUD STATUS
+// ════════════════════════════════════════════════════
+let db = null;
+let isCloudReady = false;
+
+function setCloudStatus(state, msg) {
+  const dot = document.getElementById('cloudDot');
+  const txt = document.getElementById('cloudStatus');
+  dot.className = 'cloud-dot ' + state;
+  txt.textContent = msg;
+}
+
+function initFirebase() {
+  try {
+    if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
+      setCloudStatus('error', '⚠️ 尚未配置 Firebase — 数据暂存本地，不跨设备共享');
+      isCloudReady = false;
+      return;
+    }
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    setCloudStatus('connecting', '正在连接云端...');
+    db.ref('.info/connected').on('value', snap => {
+      if (snap.val()) {
+        setCloudStatus('connected', '☁️ 云端已连接 — 所有数据实时同步');
+        isCloudReady = true;
+      } else {
+        setCloudStatus('connecting', '⚠️ 云端断线中，稍后重试...');
+        isCloudReady = false;
+      }
+    });
+  } catch(e) {
+    setCloudStatus('error', '❌ Firebase 连接失败，使用本地模式');
+    isCloudReady = false;
+  }
+}
+initFirebase();
+
+// ════════════════════════════════════════════════════
+//  CLOUD DB HELPERS
+// ════════════════════════════════════════════════════
+async function cloudGet(path) {
+  if (!db) return null;
+  const snap = await db.ref(path).get();
+  return snap.exists() ? snap.val() : null;
+}
+async function cloudSet(path, val) {
+  if (!db) return;
+  await db.ref(path).set(val);
+}
+async function cloudPush(path, val) {
+  if (!db) return null;
+  const ref = await db.ref(path).push(val);
+  return ref.key;
+}
+async function cloudRemove(path) {
+  if (!db) return;
+  await db.ref(path).remove();
+}
+function cloudListen(path, cb) {
+  if (!db) return;
+  db.ref(path).on('value', snap => cb(snap.exists() ? snap.val() : null));
+}
+
+// ════════════════════════════════════════════════════
+//  LOCAL FALLBACK DB (if Firebase not configured)
+// ════════════════════════════════════════════════════
+const SK = 'pbsTmaV4';
+function getLocalDB() {
+  try { return JSON.parse(localStorage.getItem(SK)) || buildDefaultDB(); }
+  catch { return buildDefaultDB(); }
+}
+function saveLocal(db) { localStorage.setItem(SK, JSON.stringify(db)); }
+
+function buildDefaultDB() {
+  return {
+    members: [
+      {name:'Ahmad Fariz',username:'fariz',password:'pbs123',phone:''},
+      {name:'Mohd Haziq',username:'haziq',password:'pbs123',phone:''},
+      {name:'Nur Izzati',username:'izzati',password:'pbs123',phone:''},
+      {name:'Razif Hamdan',username:'razif',password:'pbs123',phone:''},
+      {name:'Azwan Bin Ali',username:'azwan',password:'pbs123',phone:''},
+    ],
+    incidents: DEFAULT_INCIDENTS(),
+    records: [],
+    admins: [
+      {username:'admin', password:'admin888', name:'主管理员', super:true}
+    ],
+  };
+}
+function DEFAULT_INCIDENTS() {
+  return [
+    {zh:'车辆着火',ms:'Kebakaran Kenderaan',icon:'🚗'},
+    {zh:'屋子着火',ms:'Kebakaran Rumah',icon:'🏠'},
+    {zh:'工厂着火',ms:'Kebakaran Kilang',icon:'🏭'},
+    {zh:'店屋着火',ms:'Kebakaran Kedai',icon:'🏪'},
+    {zh:'草丛着火',ms:'Api Lalang',icon:'🌿'},
+    {zh:'树林野火',ms:'Kebakaran Berlukar',icon:'🌲'},
+    {zh:'处理蜜蜂',ms:'Kes Lebah',icon:'🐝'},
+    {zh:'处理虎头蜂',ms:'Kes Tebuan',icon:'🐝'},
+    {zh:'抓蛇',ms:'Kes Ular',icon:'🐍'},
+    {zh:'视察闪电水灾',ms:'Pemantauan Banjir Kilat',icon:'🌊'},
+    {zh:'水灾救援',ms:'Penyelamatan Banjir',icon:'🚤'},
+    {zh:'处理车祸',ms:'Kes Kemalangan',icon:'💥'},
+    {zh:'处理树倒',ms:'Pokok Tumbang',icon:'🌳'},
+    {zh:'救猫',ms:'Penyelamatan Kucing',icon:'🐱'},
+    {zh:'救狗',ms:'Penyelamatan Anjing',icon:'🐶'},
+    {zh:'抓四脚蛇',ms:'Kes Biawak',icon:'🦎'},
+    {zh:'抓果子狸',ms:'Kes Musang',icon:'🦡'},
+  ];
+}
+
+// ════════════════════════════════════════════════════
+//  UNIFIED DATA LAYER
+//  Reads/writes to Firebase if available, else local
+// ════════════════════════════════════════════════════
+let LOCAL = getLocalDB();
+
+async function getData(key) {
+  if (!isCloudReady) return LOCAL[key];
+  const val = await cloudGet(key);
+  return val !== null ? val : LOCAL[key];
+}
+
+async function setData(key, val) {
+  LOCAL[key] = val;
+  saveLocal(LOCAL);
+  if (isCloudReady) await cloudSet(key, val);
+}
+
+async function pushRecord(rec) {
+  LOCAL.records = LOCAL.records || [];
+  LOCAL.records.unshift(rec);
+  saveLocal(LOCAL);
+  if (isCloudReady) await cloudPush('records', rec);
+}
+
+async function deleteRecord(fbKey, localIdx) {
+  if (isCloudReady && fbKey) {
+    await cloudRemove('records/' + fbKey);
+  } else {
+    LOCAL.records.splice(localIdx, 1);
+    saveLocal(LOCAL);
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════
+const VEHICLES = [
+  {plate:'WDF4724', name:'Nissan UD LFRT', key:'v1'},
+  {plate:'PFX6994', name:'Fuso LFRT',      key:'v2'},
+  {plate:'BLM4077', name:'4X4',             key:'v3'},
+];
+const TIME_FIELDS = [
+  {id:'tTerima',   zh:'接获报案',   ms:'TERIMA PANGGILAN'},
+  {id:'tKeluar',   zh:'车辆出发',   ms:'JENTERA KELUAR'},
+  {id:'tSampai',   zh:'抵达现场',   ms:'SAMPAI LOKASI'},
+  {id:'tMula',     zh:'开始行动',   ms:'MULA OPERASI'},
+  {id:'tKawal',    zh:'行动受控',   ms:'OPERASI TERKAWAL'},
+  {id:'tTamat',    zh:'行动结束',   ms:'OPERASI TAMAT'},
+  {id:'tBertolak', zh:'离开现场',   ms:'BERTOLAK BALIK KE BALAI'},
+  {id:'tBalai',    zh:'抵达消防局', ms:'SAMPAI DI BALAI'},
+];
+
+// ════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════
+let currentUser=null, currentRole=null, selectedInc=null;
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+let vAssign={v1:{sv:[],dr:[],mb:[]},v2:{sv:[],dr:[],mb:[]},v3:{sv:[],dr:[],mb:[]}};
+let photoData=null;
+let MEMBERS=[], INCIDENTS=[], RECORDS=[], ADMINS=[];
+let currentAdmin=null;        // the logged-in admin object
+let isSuperAdmin=false;        // can this admin manage other admins?
+
+// ════════════════════════════════════════════════════
+//  LOAD ALL DATA
+// ════════════════════════════════════════════════════
+async function loadAllData() {
+  MEMBERS   = (await getData('members'))   || LOCAL.members   || [];
+  INCIDENTS = (await getData('incidents')) || LOCAL.incidents || DEFAULT_INCIDENTS();
+  let admins = (await getData('admins'))   || LOCAL.admins;
+  // Migration: old single-admin format → admins array
+  if (!admins || !Array.isArray(admins)) {
+    const oldAdmin = (await getData('admin')) || LOCAL.admin;
+    if (oldAdmin && oldAdmin.username) {
+      admins = [{username:oldAdmin.username, password:oldAdmin.password, name:'主管理员', super:true}];
+    } else {
+      admins = [{username:'admin', password:'admin888', name:'主管理员', super:true}];
+    }
+  }
+  // Ensure at least one super admin exists
+  if (!admins.some(a => a.super)) admins[0].super = true;
+  ADMINS = admins;
+  await setData('admins', ADMINS);  // persist migrated format
+  // Normalize members
+  MEMBERS = MEMBERS.map(m => ({
+    name:     m.name     || m.username || '',
+    username: m.username || (m.name||'').toLowerCase().replace(/\s+/g,''),
+    password: m.password || 'pbs123',
+    phone:    m.phone    || ''
+  }));
+}
+
+// ════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = '验证中...';
+  await loadAllData();
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value.trim();
+  const adminMatch = ADMINS.find(a => a.username===u && a.password===p);
+  if (adminMatch) {
+    currentAdmin = adminMatch;
+    currentUser = adminMatch.name || adminMatch.username;
+    currentRole = 'admin';
+    isSuperAdmin = !!adminMatch.super;
+  } else {
+    const mem = MEMBERS.find(m => m.username===u && m.password===p);
+    if (mem) { currentUser = mem.name; currentRole = 'member'; currentAdmin=null; isSuperAdmin=false; }
+    else {
+      document.getElementById('lerr').style.display = 'block';
+      btn.disabled=false; btn.textContent='🔐 登录 / Log In'; return;
+    }
+  }
+  document.getElementById('lerr').style.display = 'none';
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+  const roleLabel = currentRole==='admin' ? (isSuperAdmin?'主管理员':'管理员') : '队员';
+  document.getElementById('hdrUser').textContent = `已登录: ${currentUser} (${roleLabel})`;
+  if (currentRole==='admin') document.getElementById('tnAdmin').style.display='';
+  btn.disabled=false; btn.textContent='🔐 登录 / Log In';
+  initApp();
+}
+
+function doLogout() {
+  currentUser=null; currentRole=null; selectedInc=null;
+  currentAdmin=null; isSuperAdmin=false;
+  vAssign={v1:{sv:[],dr:[],mb:[]},v2:{sv:[],dr:[],mb:[]},v3:{sv:[],dr:[],mb:[]}};
+  photoData=null;
+  document.getElementById('appWrap').style.display='none';
+  document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('lu').value=''; document.getElementById('lp').value='';
+  document.getElementById('tnAdmin').style.display='none';
+  document.getElementById('lerr').style.display='none';
+}
+
+// ════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════
+function switchTab(t) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  if (t==='member') {
+    document.getElementById('pageMember').classList.add('active');
+    document.getElementById('tnMember').classList.add('active');
+  } else {
+    if (currentRole!=='admin') return;
+    document.getElementById('pageAdmin').classList.add('active');
+    document.getElementById('tnAdmin').classList.add('active');
+    renderAdmin();
+  }
+}
+
+const ADMIN_TABS = ['overview','members','incidents','calendar','records','settings'];
+function switchAdminTab(t, btn) {
+  ADMIN_TABS.forEach(k => {
+    document.getElementById('at'+k.charAt(0).toUpperCase()+k.slice(1)).style.display = k===t?'':'none';
+  });
+  document.querySelectorAll('.tab-pill').forEach(p=>p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (t==='calendar') renderCalendar();
+  else if (t==='records') renderRecords();
+  else if (t==='members') renderMemberTable();
+  else if (t==='incidents') renderIncidentAdmin();
+  else if (t==='overview') renderOverview();
+  else if (t==='settings') renderSettings();
+}
+
+// ════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════
+function initApp() {
+  setToday();
+  renderIncGrid();
+  renderTimeFields();
+  renderVehicles();
+  resetPhoto();
+  document.getElementById('outputSection').style.display='none';
+  if (currentRole==='admin') {
+    document.getElementById('adminLock').style.display='none';
+    document.getElementById('adminContent').style.display='block';
+  }
+}
+function setToday() {
+  document.getElementById('incDate').value = new Date().toISOString().split('T')[0];
+}
+
+// ════════════════════════════════════════════════════
+//  PHOTO AI
+// ════════════════════════════════════════════════════
+async function handlePhotoUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const b64 = ev.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    document.getElementById('photoPreview').src = ev.target.result;
+    document.getElementById('photoPreview').style.display='block';
+    document.getElementById('aiLoading').style.display='flex';
+    document.getElementById('aiResultBox').style.display='none';
+    try {
+      const result = await recognizePhoto(b64, mime);
+      photoData = result;
+      document.getElementById('aiAddr').textContent = result.addr || '未能识别地址';
+      document.getElementById('aiTime').textContent = result.time || '未能识别时间';
+      document.getElementById('aiLoading').style.display='none';
+      document.getElementById('aiResultBox').style.display='block';
+    } catch(err) {
+      document.getElementById('aiLoading').innerHTML='❌ 识别失败，请手动填写。';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function recognizePhoto(b64, mime) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-6', max_tokens:400,
+      messages:[{role:'user', content:[
+        {type:'image', source:{type:'base64', media_type:mime, data:b64}},
+        {type:'text', text:`You are analyzing a Malaysian fire brigade incident scene photo. Extract:
+1. ADDRESS: Any visible street name, building name, landmark, sign text, or location clues. Prefer Malay/English.
+2. TIME: Any visible timestamp, digital clock, or watermark showing time.
+Return ONLY valid JSON: {"addr":"address here or empty","time":"HH:MM or empty"}
+No other text.`}
+      ]}]
+    })
+  });
+  const d = await resp.json();
+  const txt = (d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
+  return JSON.parse(txt);
+}
+
+function applyPhotoData() {
+  if (!photoData) return;
+  if (photoData.addr) document.getElementById('address').value = photoData.addr;
+  if (photoData.time) document.getElementById('tSampai').value = photoData.time;
+  document.getElementById('address').scrollIntoView({behavior:'smooth',block:'center'});
+  const box = document.getElementById('aiResultBox');
+  const ok = document.createElement('div');
+  ok.style.cssText='color:var(--success);font-size:12px;font-weight:600;margin-top:8px';
+  ok.textContent='✅ 已填入表单！请检查确认内容。';
+  box.appendChild(ok);
+}
+function resetPhoto() {
+  document.getElementById('photoPreview').style.display='none';
+  document.getElementById('aiLoading').style.display='none';
+  document.getElementById('aiResultBox').style.display='none';
+  document.getElementById('photoInput').value='';
+  photoData=null;
+}
+
+// ════════════════════════════════════════════════════
+//  INCIDENT GRID
+// ════════════════════════════════════════════════════
+function renderIncGrid() {
+  const g = document.getElementById('incGrid'); g.innerHTML='';
+  INCIDENTS.forEach((inc,i) => {
+    const b = document.createElement('div');
+    b.className = 'inc-btn'+(selectedInc===i?' sel':'');
+    b.innerHTML = `<span class="ii">${inc.icon}</span><div class="iz">${inc.zh}</div><div class="im">${inc.ms}</div>`;
+    b.onclick = ()=>{ selectedInc=i; renderIncGrid(); };
+    g.appendChild(b);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  ADD INCIDENT TYPE (manual, no translation)
+// ════════════════════════════════════════════════════
+async function addCaseFromTranslate() {
+  const zh = document.getElementById('newCaseZh').value.trim();
+  const ms = document.getElementById('newCaseMs').value.trim();
+  const icon = document.getElementById('newCaseIcon').value.trim() || '🔴';
+  if (!zh||!ms) { document.getElementById('trStatus').textContent='❌ 请填写中文和马来文名称！'; return; }
+  INCIDENTS.push({zh,ms,icon});
+  await setData('incidents', INCIDENTS);
+  document.getElementById('newCaseZh').value='';
+  document.getElementById('newCaseMs').value='';
+  document.getElementById('newCaseIcon').value='';
+  document.getElementById('trStatus').textContent='✅ 已添加并同步到云端：'+zh;
+  renderIncGrid();
+}
+
+// ════════════════════════════════════════════════════
+//  TIME FIELDS
+// ════════════════════════════════════════════════════
+function renderTimeFields() {
+  const sec = document.getElementById('timeSection'); sec.innerHTML='';
+  TIME_FIELDS.forEach(f => {
+    const d = document.createElement('div'); d.className='fr';
+    d.innerHTML=`<span class="fl" style="font-size:12px">${f.zh}</span>
+      <input class="fi" id="${f.id}" type="time"/>
+      <button class="now-btn" onclick="setNow('${f.id}')">现在</button>`;
+    sec.appendChild(d);
+  });
+}
+function setNow(id) {
+  const n=new Date();
+  document.getElementById(id).value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+function getDateStr() {
+  const v = document.getElementById('incDate').value;
+  if (!v) return '-';
+  const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`;
+}
+function fmtFull(id) { const t=document.getElementById(id)?.value; return t?`${getDateStr()} - ${t}`:'-'; }
+function fmtTime(id) { return document.getElementById(id)?.value||'-'; }
+
+// ════════════════════════════════════════════════════
+//  VEHICLES
+// ════════════════════════════════════════════════════
+function renderVehicles() {
+  const sec=document.getElementById('vehicleSection'); sec.innerHTML='';
+  VEHICLES.forEach(v=>{
+    const wrap=document.createElement('div'); wrap.className='v-section';
+    wrap.innerHTML=`<div class="v-label"><span>🚒</span>${v.plate} — ${v.name}</div>
+      <div class="rr"><span class="rb sv">主管</span><div class="msw" id="ms_${v.key}_sv"></div></div>
+      <div class="rr"><span class="rb dr">驾驶</span><div class="msw" id="ms_${v.key}_dr"></div></div>
+      <div class="rr"><span class="rb mb">队员</span><div class="msw" id="ms_${v.key}_mb"></div></div>`;
+    sec.appendChild(wrap);
+    ['sv','dr','mb'].forEach(r=>renderVRole(v.key,r));
+  });
+}
+function renderVRole(vk,rk) {
+  const wrap=document.getElementById(`ms_${vk}_${rk}`); if(!wrap)return;
+  wrap.innerHTML='';
+  MEMBERS.forEach(m=>{
+    const active=vAssign[vk][rk].includes(m.name);
+    const t=document.createElement('span');
+    t.className=`st ${rk}-t${active?` a-${rk}`:''}`;
+    t.textContent=m.name;
+    t.onclick=()=>toggleMem(vk,rk,m.name);
+    wrap.appendChild(t);
+  });
+}
+function toggleMem(vk,rk,name) {
+  const arr=vAssign[vk][rk]; const i=arr.indexOf(name);
+  if(i>-1)arr.splice(i,1); else arr.push(name);
+  renderVRole(vk,rk);
+}
+
+// ════════════════════════════════════════════════════
+//  GENERATE REPORT
+// ════════════════════════════════════════════════════
+async function generateReport() {
+  if (selectedInc===null) { alert('请先选择事故类型！'); return; }
+  const btn=document.getElementById('genBtn');
+  btn.disabled=true; btn.textContent='⏳ 生成中...';
+  const inc=INCIDENTS[selectedInc];
+  function mLines(vk,rk,label) {
+    const arr=vAssign[vk][rk];
+    if(!arr.length)return`${label} : -\n`;
+    let s=`${label} : ${arr[0]}\n`;
+    for(let i=1;i<arr.length;i++)s+=`${' '.repeat(label.length)}   : ${arr[i]}\n`;
+    return s;
+  }
+  function vBlock(v,vk) {
+    return`KENDERAAN: ${v.plate} ( ${v.name} )\n`+mLines(vk,'sv','PENYELIA')+mLines(vk,'dr','PEMANDU')+mLines(vk,'mb','ANGGOTA');
+  }
+  const H=`𝗦𝗔𝗟𝗔𝗠 𝗦𝗘𝗝𝗔𝗛𝗧𝗘𝗥𝗔, 𝗦𝗔𝗟𝗔𝗠 𝗝𝗔𝗕𝗔𝗧𝗔𝗡 𝗕𝗢𝗠𝗕𝗔 𝗣𝗘𝗡𝗬𝗘𝗟𝗔𝗠𝗔𝗧 𝗠𝗔𝗟𝗔𝗬𝗦𝗜𝗔 𝗕𝗘𝗥𝗣𝗥𝗘𝗦𝗧𝗔𝗦𝗜 𝗧𝗜𝗡𝗚𝗚𝗜,𝗖𝗘𝗣𝗔𝗧 & 𝗠𝗘𝗦𝗥𝗔,𝗦𝗔𝗟𝗔𝗠 𝗣𝗘𝗥𝗦𝗔𝗧𝗨𝗔𝗡 𝗕𝗢𝗠𝗕𝗔 𝗦𝗨𝗞𝗔𝗥𝗘𝗟𝗔 𝗧𝗔𝗠𝗔𝗡 𝗠𝗢𝗨𝗡𝗧 𝗔𝗨𝗦𝗧𝗜𝗡.`;
+  const rpt=`${H}
+
+LAPORAN INSIDEN
+
+JENIS INSIDEN : ${inc.ms.toUpperCase()}
+TARIKH/MASA : ${getDateStr()}
+NAMA PEMANGGIL : ${document.getElementById('callerName').value||'-'}
+NOMBOR : ${document.getElementById('callerPhone').value||'-'}
+ALAMAT : ${document.getElementById('address').value||'-'}
+
+TERIMA PANGGILAN : ${fmtFull('tTerima')}
+JENTERA KELUAR : ${fmtTime('tKeluar')}
+SAMPAI LOKASI : ${fmtTime('tSampai')}
+JARAK : ${document.getElementById('distance').value||'-'}
+
+MULA OPERASI : ${fmtTime('tMula')}
+OPERASI TERKAWAL : ${fmtTime('tKawal')}
+OPERASI TAMAT : ${fmtTime('tTamat')}
+BERTOLAK BALIK KE BALAI : ${fmtTime('tBertolak')}
+SAMPAI DI BALAI : ${fmtTime('tBalai')}
+
+KEANGGOTAAN PBS TMA:
+
+${vBlock(VEHICLES[0],'v1')}
+${vBlock(VEHICLES[1],'v2')}
+${vBlock(VEHICLES[2],'v3')}
+MAKLUMAT KEJADIAN :
+${document.getElementById('maklumat').value||'-'}
+
+SEKIAN LAPORAN
+#PersatuanBombaSukarelaTamanMountAustin`;
+
+  document.getElementById('outputBox').textContent=rpt;
+  document.getElementById('outputSection').style.display='block';
+  document.getElementById('outputSection').scrollIntoView({behavior:'smooth'});
+  const rec = {
+    id:Date.now(), date:document.getElementById('incDate').value||new Date().toISOString().split('T')[0],
+    ts:new Date().toISOString(), incident:inc.zh, incidentMs:inc.ms,
+    address:document.getElementById('address').value,
+    caller:document.getElementById('callerName').value,
+    filledBy:currentUser, report:rpt
+  };
+  await pushRecord(rec);
+  btn.disabled=false; btn.textContent='⚡ 生成报告 / Jana Laporan';
+}
+
+function copyReport() {
+  const txt=document.getElementById('outputBox').textContent;
+  const btn=document.getElementById('copyBtn');
+  const done=()=>{btn.textContent='✅ 已复制！';btn.classList.add('done');setTimeout(()=>{btn.textContent='📋 复制报告 / Salin Laporan';btn.classList.remove('done');},2500);};
+  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(done).catch(()=>{legacyCopy(txt);done();});
+  else{legacyCopy(txt);done();}
+}
+function legacyCopy(txt){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+
+// ════════════════════════════════════════════════════
+//  ADMIN — OVERVIEW
+// ════════════════════════════════════════════════════
+function renderAdmin() {
+  document.getElementById('adminLock').style.display='none';
+  document.getElementById('adminContent').style.display='block';
+  document.querySelectorAll('.tab-pill').forEach((p,i)=>p.classList.toggle('active',i===0));
+  ADMIN_TABS.forEach((k,i)=>{
+    document.getElementById('at'+k.charAt(0).toUpperCase()+k.slice(1)).style.display=i===0?'':'none';
+  });
+  renderOverview();
+}
+
+async function renderOverview() {
+  let records = [];
+  if (isCloudReady) {
+    const val = await cloudGet('records');
+    records = val ? Object.values(val) : [];
+  } else {
+    records = LOCAL.records||[];
+  }
+  const now=new Date();
+  const mRecs=records.filter(r=>{const d=new Date(r.ts);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  document.getElementById('stTotal').textContent=records.length;
+  document.getElementById('stMembers').textContent=MEMBERS.length;
+  document.getElementById('stMonth').textContent=mRecs.length;
+  const counts={};records.forEach(r=>{counts[r.incident]=(counts[r.incident]||0)+1;});
+  const el=document.getElementById('incStats');el.innerHTML='';
+  if(!Object.keys(counts).length){el.innerHTML='<span style="color:#9CA3AF;font-size:12px">暂无数据</span>';return;}
+  Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    el.innerHTML+=`<span class="tag-a">${k} <strong style="color:var(--red)">${v}</strong></span>`;
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  ADMIN — MEMBERS
+// ════════════════════════════════════════════════════
+function renderMemberTable() {
+  const tb=document.getElementById('memberTbody'); tb.innerHTML='';
+  const nm=document.getElementById('noMember');
+  if(!MEMBERS.length){nm.style.display='block';return;}
+  nm.style.display='none';
+  MEMBERS.forEach((m,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td>
+      <td><input class="edit-inp" value="${esc(m.name)}" onchange="editMem(${i},'name',this.value)"/></td>
+      <td><input class="edit-inp" value="${esc(m.username)}" onchange="editMem(${i},'username',this.value)"/></td>
+      <td><input class="edit-inp" type="text" value="${esc(m.password)}" onchange="editMem(${i},'password',this.value)"/></td>
+      <td><input class="edit-inp" value="${esc(m.phone)}" placeholder="—" onchange="editMem(${i},'phone',this.value)"/></td>
+      <td><button class="sm-btn red" onclick="delMember(${i})">删除</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+async function editMem(i,field,val){
+  MEMBERS[i][field]=val;
+  await setData('members',MEMBERS);
+}
+async function delMember(i){
+  if(!confirm(`确认删除队员 "${MEMBERS[i].name}"？`))return;
+  MEMBERS.splice(i,1);
+  await setData('members',MEMBERS);
+  renderMemberTable(); renderVehicles();
+}
+async function addSingleMember(){
+  const name=document.getElementById('nmName').value.trim();
+  const user=document.getElementById('nmUser').value.trim();
+  const pass=document.getElementById('nmPass').value.trim();
+  const phone=document.getElementById('nmPhone').value.trim();
+  const msg=document.getElementById('addMemberMsg');
+  if(!name||!user||!pass){msg.textContent='❌ 请填写全名、用户名和密码';return;}
+  if(MEMBERS.find(m=>m.username===user)){msg.textContent=`❌ 用户名 "${user}" 已存在`;return;}
+  MEMBERS.push({name,username:user,password:pass,phone:phone||''});
+  await setData('members',MEMBERS);
+  ['nmName','nmUser','nmPass','nmPhone'].forEach(id=>document.getElementById(id).value='');
+  msg.textContent=`✅ 已添加并同步: ${name} (${user})`;
+  renderMemberTable(); renderVehicles();
+}
+async function bulkAddMembers(){
+  const raw=document.getElementById('bulkArea').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length){document.getElementById('bulkResult').textContent='❌ 请先输入内容';return;}
+  let added=0,skipped=[],errors=[];
+  lines.forEach(line=>{
+    const parts=line.split(',').map(s=>s.trim());
+    if(parts.length<3){errors.push(`格式错误: "${line}"`);return;}
+    const[name,user,pass,...rest]=parts;
+    if(!name||!user||!pass){errors.push(`缺少信息: "${line}"`);return;}
+    if(MEMBERS.find(m=>m.username===user)){skipped.push(`${user}(已存在)`);return;}
+    MEMBERS.push({name,username:user,password:pass,phone:rest[0]||''});added++;
+  });
+  await setData('members',MEMBERS);
+  renderMemberTable(); renderVehicles();
+  document.getElementById('bulkArea').value='';
+  let msg=`✅ 注册成功 ${added} 人`;
+  if(skipped.length)msg+=`　⚠️ 跳过: ${skipped.join(', ')}`;
+  if(errors.length)msg+=`　❌ 错误行: ${errors.length}`;
+  document.getElementById('bulkResult').textContent=msg;
+}
+
+// ════════════════════════════════════════════════════
+//  ADMIN — INCIDENT TYPES
+// ════════════════════════════════════════════════════
+function renderIncidentAdmin(){
+  const el=document.getElementById('incAdminList');el.innerHTML='';
+  INCIDENTS.forEach((inc,i)=>{
+    const s=document.createElement('span');s.className='tag-a';
+    s.innerHTML=`${inc.icon} <b>${inc.zh}</b> <span style="color:#9CA3AF;font-size:10px">${inc.ms}</span>`;
+    const btn=document.createElement('button');btn.className='tag-del';btn.textContent='×';
+    btn.onclick=()=>delIncident(i);s.appendChild(btn);el.appendChild(s);
+  });
+}
+async function delIncident(i){
+  if(!confirm(`确认删除 "${INCIDENTS[i].zh}"？`))return;
+  if(selectedInc===i)selectedInc=null; else if(selectedInc>i)selectedInc--;
+  INCIDENTS.splice(i,1);
+  await setData('incidents',INCIDENTS);
+  renderIncidentAdmin();renderIncGrid();
+}
+async function adminAddIncident(){
+  const zh=document.getElementById('aiZh').value.trim();
+  const ms=document.getElementById('aiMs').value.trim();
+  const icon=document.getElementById('aiIcon').value.trim()||'🔴';
+  if(!zh||!ms){document.getElementById('aiStatus').textContent='❌ 请填写中文和马来文！';return;}
+  INCIDENTS.push({zh,ms,icon});
+  await setData('incidents',INCIDENTS);
+  document.getElementById('aiZh').value='';document.getElementById('aiMs').value='';document.getElementById('aiIcon').value='';
+  renderIncidentAdmin();renderIncGrid();
+  document.getElementById('aiStatus').textContent='✅ 已添加并同步：'+zh;
+}
+
+// ════════════════════════════════════════════════════
+//  ADMIN — RECORDS
+// ════════════════════════════════════════════════════
+let RECORDS_CACHE = [];
+async function renderRecords(){
+  const tb=document.getElementById('logTbody');const nr=document.getElementById('noRec');
+  tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:16px">加载中...</td></tr>';
+  let records=[];
+  if(isCloudReady){
+    const val=await cloudGet('records');
+    records=val?Object.entries(val).map(([k,v])=>({...v,_fbKey:k})):[];
+    records.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+  } else {
+    records=(LOCAL.records||[]).map((r,i)=>({...r,_localIdx:i}));
+  }
+  RECORDS_CACHE=records;
+  tb.innerHTML='';
+  if(!records.length){nr.style.display='block';return;}
+  nr.style.display='none';
+  records.forEach((r,i)=>{
+    const d=new Date(r.ts);
+    const dt=`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${records.length-i}</td><td>${dt}</td><td>${r.incident}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.address||'-'}</td>
+      <td>${r.filledBy||'-'}</td>
+      <td style="white-space:nowrap">
+        <button class="sm-btn blue" onclick="viewRecord(${i})">查看</button>
+        <button class="sm-btn red" style="margin-left:4px" onclick="delRecord(${i})">删除</button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+}
+function viewRecord(i){
+  const r=RECORDS_CACHE[i];
+  const w=window.open('','_blank','width=620,height=720');
+  if(w){w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>报告</title></head><body style="font-family:monospace;font-size:13px;padding:20px"><pre style="white-space:pre-wrap;line-height:1.7">${r.report||'无内容'}</pre></body></html>`);w.document.close();}
+}
+async function delRecord(i){
+  if(!confirm('确认删除此案件记录？此操作不可恢复。'))return;
+  const r=RECORDS_CACHE[i];
+  await deleteRecord(r._fbKey, r._localIdx);
+  RECORDS_CACHE.splice(i,1);
+  renderRecords(); renderOverview();
+}
+
+// ════════════════════════════════════════════════════
+//  ADMIN — SETTINGS (账号 & 管理员管理)
+// ════════════════════════════════════════════════════
+function renderSettings() {
+  // My account info
+  const info = document.getElementById('myAccountInfo');
+  info.innerHTML = `当前登录：<strong>${currentAdmin.name||currentAdmin.username}</strong>　|　用户名：<strong>${currentAdmin.username}</strong>　|　权限：<strong>${isSuperAdmin?'👑 主管理员':'管理员'}</strong>`;
+  // Clear form fields
+  ['chkOldPass','chkNewUser','chkNewPass','chkNewPass2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('chkMsg').textContent='';
+  // Super-admin section
+  const superSec = document.getElementById('superAdminSection');
+  if (isSuperAdmin) {
+    superSec.style.display='';
+    renderAdminTable();
+  } else {
+    superSec.style.display='none';
+  }
+}
+
+// 修改自己的用户名/密码 — 需要旧密码
+async function changeMyCredentials() {
+  const oldPass = document.getElementById('chkOldPass').value.trim();
+  const newUser = document.getElementById('chkNewUser').value.trim();
+  const newPass = document.getElementById('chkNewPass').value.trim();
+  const newPass2 = document.getElementById('chkNewPass2').value.trim();
+  const msg = document.getElementById('chkMsg');
+
+  if (!oldPass) { msg.textContent='❌ 请输入旧密码进行验证'; return; }
+  if (oldPass !== currentAdmin.password) { msg.textContent='❌ 旧密码错误，无法修改'; return; }
+  if (!newUser && !newPass) { msg.textContent='❌ 请至少填写新用户名或新密码'; return; }
+  if (newPass && newPass !== newPass2) { msg.textContent='❌ 两次输入的新密码不一致'; return; }
+
+  // Check new username not taken by another admin or member
+  if (newUser && newUser !== currentAdmin.username) {
+    if (ADMINS.some(a => a !== currentAdmin && a.username === newUser)) { msg.textContent=`❌ 用户名 "${newUser}" 已被其他管理员使用`; return; }
+    if (MEMBERS.some(m => m.username === newUser)) { msg.textContent=`❌ 用户名 "${newUser}" 已被队员使用`; return; }
+  }
+
+  // Find and update the admin in ADMINS array
+  const idx = ADMINS.findIndex(a => a.username === currentAdmin.username);
+  if (idx === -1) { msg.textContent='❌ 系统错误：找不到当前账号'; return; }
+  if (newUser) ADMINS[idx].username = newUser;
+  if (newPass) ADMINS[idx].password = newPass;
+  currentAdmin = ADMINS[idx];
+
+  await setData('admins', ADMINS);
+  msg.textContent = '✅ 修改成功！下次请用新的用户名/密码登录。';
+  document.getElementById('myAccountInfo').innerHTML = `当前登录：<strong>${currentAdmin.name||currentAdmin.username}</strong>　|　用户名：<strong>${currentAdmin.username}</strong>　|　权限：<strong>${isSuperAdmin?'👑 主管理员':'管理员'}</strong>`;
+  ['chkOldPass','chkNewUser','chkNewPass','chkNewPass2'].forEach(id=>document.getElementById(id).value='');
+}
+
+// 主管理员：管理员列表
+function renderAdminTable() {
+  const tb = document.getElementById('adminTbody'); tb.innerHTML='';
+  ADMINS.forEach((a,i)=>{
+    const isMe = a.username === currentAdmin.username;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td>
+      <td><input class="edit-inp" value="${esc(a.name||'')}" onchange="editAdmin(${i},'name',this.value)"/></td>
+      <td><input class="edit-inp" value="${esc(a.username)}" onchange="editAdmin(${i},'username',this.value)"/></td>
+      <td><input class="edit-inp" type="text" value="${esc(a.password)}" onchange="editAdmin(${i},'password',this.value)"/></td>
+      <td>${a.super?'👑 主管理员':'管理员'} ${isMe?'<span style="color:var(--success)">(我)</span>':''}</td>
+      <td>
+        <button class="sm-btn ${a.super?'green':'blue'}" onclick="toggleSuper(${i})">${a.super?'降为普通':'升为主管'}</button>
+        ${isMe?'':`<button class="sm-btn red" style="margin-left:4px" onclick="delAdmin(${i})">删除</button>`}
+      </td>`;
+    tb.appendChild(tr);
+  });
+}
+
+async function editAdmin(i, field, val) {
+  val = val.trim();
+  if (field === 'username') {
+    if (!val) { alert('用户名不能为空'); renderAdminTable(); return; }
+    if (ADMINS.some((a,j)=>j!==i && a.username===val) || MEMBERS.some(m=>m.username===val)) {
+      alert(`用户名 "${val}" 已被使用`); renderAdminTable(); return;
+    }
+  }
+  if (field === 'password' && !val) { alert('密码不能为空'); renderAdminTable(); return; }
+  ADMINS[i][field] = val;
+  // If this row is the currently logged-in admin, keep reference in sync
+  if (currentAdmin && ADMINS[i].username === currentAdmin.username) currentAdmin = ADMINS[i];
+  await setData('admins', ADMINS);
+}
+
+async function toggleSuper(i) {
+  // Prevent removing the last super admin
+  if (ADMINS[i].super) {
+    const superCount = ADMINS.filter(a=>a.super).length;
+    if (superCount <= 1) { alert('❌ 必须保留至少一个主管理员！'); return; }
+  }
+  ADMINS[i].super = !ADMINS[i].super;
+  await setData('admins', ADMINS);
+  renderAdminTable();
+}
+
+async function delAdmin(i) {
+  if (ADMINS[i].username === currentAdmin.username) { alert('不能删除自己'); return; }
+  if (ADMINS[i].super && ADMINS.filter(a=>a.super).length<=1) { alert('❌ 必须保留至少一个主管理员！'); return; }
+  if (!confirm(`确认删除管理员 "${ADMINS[i].name||ADMINS[i].username}"？`)) return;
+  ADMINS.splice(i,1);
+  await setData('admins', ADMINS);
+  renderAdminTable();
+}
+
+async function addAdmin() {
+  const name = document.getElementById('naName').value.trim();
+  const user = document.getElementById('naUser').value.trim();
+  const pass = document.getElementById('naPass').value.trim();
+  const isSuper = document.getElementById('naSuper').checked;
+  const msg = document.getElementById('addAdminMsg');
+  if (!user || !pass) { msg.textContent='❌ 请填写用户名和密码'; return; }
+  if (ADMINS.some(a=>a.username===user) || MEMBERS.some(m=>m.username===user)) { msg.textContent=`❌ 用户名 "${user}" 已被使用`; return; }
+  ADMINS.push({name:name||user, username:user, password:pass, super:isSuper});
+  await setData('admins', ADMINS);
+  ['naName','naUser','naPass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('naSuper').checked=false;
+  msg.textContent=`✅ 已添加管理员: ${name||user}${isSuper?'（主管理员）':''}`;
+  renderAdminTable();
+}
+
+// ════════════════════════════════════════════════════
+//  CALENDAR
+// ════════════════════════════════════════════════════
+const DAYS_ZH=['日','一','二','三','四','五','六'];
+const MONTHS_ZH=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+async function renderCalendar(){
+  document.getElementById('calTitle').textContent=`${calYear}年${MONTHS_ZH[calMonth]}`;
+  const grid=document.getElementById('calGrid');grid.innerHTML='';
+  DAYS_ZH.forEach((d,i)=>{
+    const h=document.createElement('div');
+    h.className='cal-day-hdr'+(i===0?' sun':i===6?' sat':'');
+    h.textContent=d;grid.appendChild(h);
+  });
+  let records=[];
+  if(isCloudReady){const val=await cloudGet('records');records=val?Object.values(val):[];}
+  else records=LOCAL.records||[];
+  const today=new Date();
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const rmap={};
+  records.forEach(r=>{
+    let d; if(r.date){const[y,m,dy]=r.date.split('-');d=new Date(y,m-1,dy);}else d=new Date(r.ts);
+    if(d.getFullYear()===calYear&&d.getMonth()===calMonth){const k=d.getDate();if(!rmap[k])rmap[k]=[];rmap[k].push(r);}
+  });
+  for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='cal-cell empty';grid.appendChild(e);}
+  for(let day=1;day<=days;day++){
+    const cell=document.createElement('div');
+    const recs=rmap[day]||[];
+    const isToday=today.getDate()===day&&today.getMonth()===calMonth&&today.getFullYear()===calYear;
+    cell.className='cal-cell'+(isToday?' today':'')+(recs.length?' has-inc':'');
+    cell.innerHTML=`<div class="cn">${day}</div>`+(recs.length?`<span class="cal-dot"></span><div class="cal-count">${recs.length}案</div>`:'');
+    if(recs.length)cell.onclick=()=>openPopup(day,recs);
+    grid.appendChild(cell);
+  }
+}
+function openPopup(day,recs){
+  document.getElementById('popupTitle').textContent=`${calYear}年${MONTHS_ZH[calMonth]}${day}日 — ${recs.length}件案`;
+  const body=document.getElementById('popupBody');body.innerHTML='';
+  recs.forEach((r,i)=>{
+    const d=new Date(r.ts);
+    const t=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    body.innerHTML+=`<div class="inc-item"><div class="it">#${i+1} · ${t}</div><div class="ia">${r.incident}</div><div class="ib2">📍 ${r.address||'—'} | 👤 ${r.filledBy||'—'}</div></div>`;
+  });
+  document.getElementById('calPopup').style.display='block';
+  document.getElementById('overlay').style.display='block';
+}
+function closePopup(){
+  document.getElementById('calPopup').style.display='none';
+  document.getElementById('overlay').style.display='none';
+}
+</script>
+</body>
+</html>
