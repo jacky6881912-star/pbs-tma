@@ -236,6 +236,7 @@ body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-s
     <div class="hdr-nav">
       <button class="nb active" id="tnMember" onclick="switchTab('member')">📝 填写报告</button>
       <button class="nb" id="tnMyInfo" onclick="openMyInfo()" style="display:none">👤 我的资料</button>
+      <button class="nb" id="tnSecretary" onclick="openSecretaryView()" style="display:none">📇 队员名册</button>
       <button class="nb" id="tnAdmin" onclick="switchTab('admin')" style="display:none">⚙️ 管理后台</button>
       <button class="nb danger" onclick="doLogout()">退出</button>
     </div>
@@ -490,6 +491,15 @@ body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-s
   <div class="cal-popup-body" id="memPopupBody"></div>
 </div>
 
+<div class="overlay" id="secOverlay" onclick="closeSecretaryView()"></div>
+<div class="cal-popup" id="secPopup" style="display:none;max-width:620px">
+  <div class="cal-popup-hdr">
+    <span>📇 队员名册（秘书查看）</span>
+    <button class="cal-popup-close" onclick="closeSecretaryView()">✕</button>
+  </div>
+  <div class="cal-popup-body" id="secBody"></div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════
 //  🔥 FIREBASE CONFIG — PBS TMA 专属配置（已连接云端）
@@ -709,7 +719,8 @@ async function loadAllData() {
     password:  m.password || 'pbs123',
     phone:     m.phone    || '',
     nickname:  m.nickname || '',
-    chineseName: m.chineseName || ''
+    chineseName: m.chineseName || '',
+    isSecretary: m.isSecretary || false
   }));
 }
 
@@ -730,7 +741,10 @@ async function doLogin() {
     isSuperAdmin = !!adminMatch.super;
   } else {
     const mem = MEMBERS.find(m => m.username===u && m.password===p);
-    if (mem) { currentUser = mem.name; currentRole = 'member'; currentAdmin=null; isSuperAdmin=false; }
+    if (mem) {
+      currentUser = mem.name; currentAdmin=null; isSuperAdmin=false;
+      currentRole = mem.isSecretary ? 'secretary' : 'member';
+    }
     else {
       document.getElementById('lerr').style.display = 'block';
       btn.disabled=false; btn.textContent='🔐 登录 / Log In'; return;
@@ -739,10 +753,11 @@ async function doLogin() {
   document.getElementById('lerr').style.display = 'none';
   document.getElementById('loginWrap').style.display = 'none';
   document.getElementById('appWrap').style.display = 'block';
-  const roleLabel = currentRole==='admin' ? (isSuperAdmin?'主管理员':'管理员') : '队员';
+  const roleLabel = currentRole==='admin' ? (isSuperAdmin?'主管理员':'管理员') : (currentRole==='secretary' ? '秘书' : '队员');
   document.getElementById('hdrUser').textContent = `已登录: ${currentUser} (${roleLabel})`;
   if (currentRole==='admin') document.getElementById('tnAdmin').style.display='';
-  if (currentRole==='member') document.getElementById('tnMyInfo').style.display='';
+  if (currentRole==='secretary') document.getElementById('tnSecretary').style.display='';
+  if (currentRole==='member'||currentRole==='secretary') document.getElementById('tnMyInfo').style.display='';
   btn.disabled=false; btn.textContent='🔐 登录 / Log In';
   initApp();
 }
@@ -757,6 +772,7 @@ function doLogout() {
   document.getElementById('lu').value=''; document.getElementById('lp').value='';
   document.getElementById('tnAdmin').style.display='none';
   document.getElementById('tnMyInfo').style.display='none';
+  document.getElementById('tnSecretary').style.display='none';
   document.getElementById('lerr').style.display='none';
 }
 
@@ -955,7 +971,17 @@ function renderVRole(vk,rk) {
     const active=vAssign[vk][rk].includes(m.name);
     const t=document.createElement('span');
     t.className=`st ${rk}-t${active?` a-${rk}`:''}`;
-    t.textContent = m.nickname ? `${m.nickname} (${m.name})` : m.name;
+    // 显示：小名 (英文全名 / 中文全名)，缺哪个就省略哪个
+    let disp = m.name;
+    const extras = [];
+    if (m.name) extras.push(m.name);
+    if (m.chineseName) extras.push(m.chineseName);
+    const paren = extras.length ? extras.join(' / ') : '';
+    if (m.nickname && paren) disp = `${m.nickname} (${paren})`;
+    else if (m.nickname) disp = m.nickname;
+    else if (m.chineseName) disp = `${m.name} / ${m.chineseName}`;
+    else disp = m.name;
+    t.textContent = disp;
     t.onclick=()=>toggleMem(vk,rk,m.name);
     wrap.appendChild(t);
   });
@@ -1090,7 +1116,10 @@ function renderMemberTable() {
       <td><input class="edit-inp" type="text" value="${esc(m.password)}" onchange="editMem(${i},'password',this.value)"/></td>
       <td><input class="edit-inp" value="${esc(m.phone)}" placeholder="—" onchange="editMem(${i},'phone',this.value)"/></td>
       <td><button class="sm-btn blue" onclick="openMemberDetail(${i})">📋 详情</button></td>
-      <td><button class="sm-btn red" onclick="delMember(${i})">删除</button></td>`;
+      <td>
+        <button class="sm-btn ${m.isSecretary?'green':''}" style="${m.isSecretary?'':'background:#E2E8F0;color:#64748B'}" onclick="toggleSecretary(${i})">${m.isSecretary?'✅ 秘书':'设为秘书'}</button>
+        <button class="sm-btn red" style="margin-left:4px" onclick="delMember(${i})">删除</button>
+      </td>`;
     tb.appendChild(tr);
   });
 }
@@ -1104,6 +1133,14 @@ async function delMember(i){
   MEMBERS.splice(i,1);
   await setData('members',MEMBERS);
   renderMemberTable(); renderVehicles();
+}
+async function toggleSecretary(i){
+  const m=MEMBERS[i];
+  const willBe = !m.isSecretary;
+  if(!confirm(willBe?`确认把 "${m.name}" 设为秘书？\n（秘书可查看所有队员资料，但看不到用户名/密码，也不能修改）`:`确认取消 "${m.name}" 的秘书身份？`))return;
+  MEMBERS[i].isSecretary = willBe;
+  await setData('members',MEMBERS);
+  renderMemberTable();
 }
 async function addSingleMember(){
   const name=document.getElementById('nmName').value.trim();
@@ -1279,6 +1316,43 @@ function openMyInfo() {
   curDetailIdx = idx;
   detailEditable = false;  // 资料只读
   isMyOwnInfo = true;      // 但允许改密码
+  renderMemberDetail();
+  document.getElementById('memPopup').style.display = 'block';
+  document.getElementById('memOverlay').style.display = 'block';
+}
+
+// ════════════════════════════════════════════════════
+//  秘书视图 — 查看所有队员资料（只读，不显示用户名/密码，不能改）
+// ════════════════════════════════════════════════════
+function openSecretaryView() {
+  if (currentRole !== 'secretary' && currentRole !== 'admin') return;
+  const body = document.getElementById('secBody');
+  let html = `<div style="font-size:12px;color:var(--gray);margin-bottom:10px">共 ${MEMBERS.length} 名队员 · 点「查看」看详细资料（不含用户名/密码，只读）</div>`;
+  html += `<div style="overflow-x:auto"><table class="mem-table"><thead><tr><th>#</th><th>英文全名</th><th>小名</th><th>中文名</th><th>电话</th><th>资料</th></tr></thead><tbody>`;
+  MEMBERS.forEach((m,i)=>{
+    html += `<tr>
+      <td>${i+1}</td>
+      <td>${esc(m.name)}</td>
+      <td>${esc(m.nickname||'—')}</td>
+      <td>${esc(m.chineseName||'—')}</td>
+      <td>${esc(m.phone||'—')}</td>
+      <td><button class="sm-btn blue" onclick="secViewMember(${i})">📋 查看</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  body.innerHTML = html;
+  document.getElementById('secPopup').style.display = 'block';
+  document.getElementById('secOverlay').style.display = 'block';
+}
+function closeSecretaryView() {
+  document.getElementById('secPopup').style.display = 'none';
+  document.getElementById('secOverlay').style.display = 'none';
+}
+// 秘书查看某队员的详细资料（只读，不含用户名/密码）
+function secViewMember(i) {
+  curDetailIdx = i;
+  detailEditable = false;  // 只读
+  isMyOwnInfo = false;     // 不显示改密码
   renderMemberDetail();
   document.getElementById('memPopup').style.display = 'block';
   document.getElementById('memOverlay').style.display = 'block';
