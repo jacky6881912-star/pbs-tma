@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PBS TMA — Sistem Laporan Insiden</title>
+<title>茂奥斯汀义务消防队 PBS BOMBA AUSTIN</title>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -11,14 +11,14 @@
 
 <style>
 :root{
-  --red:#C0392B;--red-dark:#922B21;--red-light:#F1948A;
-  --navy:#1B2A4A;--navy-light:#2C3E6B;
-  --bg:#F0F2F5;--white:#fff;--gray:#6B7280;--gray-light:#E5E7EB;
-  --text:#1F2937;--success:#059669;--warn:#D97706;
-  --shadow:0 2px 8px rgba(0,0,0,.12);--shadow-lg:0 8px 24px rgba(0,0,0,.16)
+  --red:#B91C1C;--red-dark:#7F1D1D;--red-light:#FCA5A5;
+  --navy:#12203C;--navy-light:#243B63;
+  --bg:#EEF1F6;--white:#fff;--gray:#64748B;--gray-light:#E2E8F0;
+  --text:#1E293B;--success:#059669;--warn:#D97706;
+  --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.06);--shadow-lg:0 10px 30px rgba(15,23,42,.14)
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);background-image:linear-gradient(180deg,#E8ECF3 0%,#EEF1F6 240px);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ── CLOUD STATUS BAR ── */
 .cloud-bar{background:#1E3A5F;color:#fff;text-align:center;padding:6px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -30,7 +30,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 
 /* ── LOGIN ── */
 .login-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 34px);padding:20px}
-.login-box{background:var(--white);border-radius:18px;box-shadow:var(--shadow-lg);padding:36px 30px;width:100%;max-width:380px;text-align:center}
+.login-box{background:var(--white);border-radius:20px;box-shadow:var(--shadow-lg);padding:38px 32px;width:100%;max-width:390px;text-align:center;border-top:5px solid var(--red);position:relative}
 .fire{font-size:56px;margin-bottom:12px}
 .login-box h2{color:var(--navy);font-size:22px;margin-bottom:4px}
 .login-box p{color:var(--gray);font-size:13px;margin-bottom:24px}
@@ -42,7 +42,7 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 .lerr{background:#FEF2F2;color:var(--red-dark);border-radius:8px;padding:9px 12px;font-size:13px;margin-top:10px;display:none}
 
 /* ── HEADER ── */
-.hdr{background:linear-gradient(135deg,var(--navy) 0%,var(--red-dark) 100%);color:#fff;position:sticky;top:0;z-index:200;box-shadow:var(--shadow-lg)}
+.hdr{background:linear-gradient(135deg,var(--navy) 0%,var(--red-dark) 100%);color:#fff;position:sticky;top:0;z-index:200;box-shadow:var(--shadow-lg);border-bottom:3px solid var(--red)}
 .hdr-in{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;max-width:960px;margin:0 auto;flex-wrap:wrap;gap:8px}
 .hdr-logo{display:flex;align-items:center;gap:10px}
 .hdr-logo .ico{font-size:26px}
@@ -59,8 +59,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 .page{display:none}.page.active{display:block}
 
 /* ── CARDS ── */
-.card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
-.ch{padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;color:#fff}
+.card{background:var(--white);border-radius:14px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;border:1px solid rgba(15,23,42,.05)}
+.ch{padding:11px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;color:#fff;letter-spacing:.2px}
 .ch.navy{background:var(--navy)}.ch.red{background:var(--red)}.ch.teal{background:#0F766E}.ch.orange{background:#C2410C}.ch.purple{background:#6D28D9}
 .cb{padding:14px 16px}
 
@@ -126,15 +126,15 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 .out-box{background:#0D1B2A;color:#E2E8F0;border-radius:10px;padding:16px;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word;min-height:180px;max-height:450px;overflow-y:auto}
 .copy-btn{width:100%;margin-top:10px;padding:13px;background:var(--success);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .copy-btn:hover{background:#047857}.copy-btn.done{background:#374151}
-.gen-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--red-dark),var(--red));color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin:14px 0 0;box-shadow:0 4px 12px rgba(192,57,43,.35);transition:all .2s}
+.gen-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--red-dark),var(--red));color:#fff;border:none;border-radius:11px;font-size:16px;font-weight:700;cursor:pointer;margin:14px 0 0;box-shadow:0 6px 16px rgba(127,29,29,.3);transition:all .2s;letter-spacing:.3px}
 .gen-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(192,57,43,.4)}
 .gen-btn:disabled{opacity:.5;transform:none;cursor:not-allowed}
 
 /* ── ADMIN ── */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:14px}
-.stat-c{background:var(--white);border-radius:10px;padding:14px;box-shadow:var(--shadow);text-align:center}
-.stat-n{font-size:32px;font-weight:800;color:var(--red)}.stat-l{font-size:11px;color:var(--gray);margin-top:2px}
-.a-sec{background:var(--white);border-radius:12px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.stat-c{background:var(--white);border-radius:14px;padding:18px 14px;box-shadow:var(--shadow);text-align:center;border:1px solid rgba(15,23,42,.05);border-top:3px solid var(--red)}
+.stat-n{font-size:34px;font-weight:800;color:var(--red);line-height:1.1}.stat-l{font-size:11px;color:var(--gray);margin-top:4px;font-weight:500}
+.a-sec{background:var(--white);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid rgba(15,23,42,.05)}
 .a-sec h3{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;border-bottom:2px solid var(--gray-light);padding-bottom:6px}
 .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .tag-a{padding:5px 11px;border-radius:15px;background:var(--bg);font-size:12px;display:flex;align-items:center;gap:6px;border:1px solid var(--gray-light)}
@@ -198,8 +198,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 .dvd{height:1px;background:var(--gray-light);margin:11px 0}
 .no-rec{text-align:center;color:var(--gray);padding:24px 0;font-size:13px}
 .tabs-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.tab-pill{padding:7px 15px;border-radius:20px;border:1.5px solid var(--gray-light);background:#fff;font-size:13px;cursor:pointer;font-weight:500;color:var(--gray);transition:all .2s}
-.tab-pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tab-pill{padding:8px 16px;border-radius:20px;border:1.5px solid var(--gray-light);background:#fff;font-size:13px;cursor:pointer;font-weight:500;color:var(--gray);transition:all .2s}
+.tab-pill.active{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 2px 8px rgba(18,32,60,.25)}
 .info-box{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:9px;padding:11px 13px;font-size:12px;color:#1E40AF;margin-bottom:12px;line-height:1.6}
 .warn-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:9px;padding:11px 13px;font-size:12px;color:#92400E;margin-bottom:12px;line-height:1.6}
 </style>
@@ -216,8 +216,8 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
 <div class="login-wrap" id="loginWrap">
   <div class="login-box">
     <div class="fire">🚒</div>
-    <h2>PBS TMA 报告系统</h2>
-    <p>Persatuan Bomba Sukarela Taman Mount Austin</p>
+    <h2>茂奥斯汀义务消防队</h2>
+    <p>PBS BOMBA AUSTIN</p>
     <input class="lf" id="lu" placeholder="用户名 / Username" autocomplete="username"/>
     <input class="lf" id="lp" type="password" placeholder="密码 / Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button class="lb" id="loginBtn" onclick="doLogin()">🔐 登录 / Log In</button>
@@ -231,10 +231,11 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
   <div class="hdr-in">
     <div class="hdr-logo">
       <span class="ico">🚒</span>
-      <div><h1>PBS TMA 事故报告系统</h1><p id="hdrUser">Persatuan Bomba Sukarela Taman Mount Austin</p></div>
+      <div><h1>茂奥斯汀义务消防队</h1><p id="hdrUser">PBS BOMBA AUSTIN</p></div>
     </div>
     <div class="hdr-nav">
       <button class="nb active" id="tnMember" onclick="switchTab('member')">📝 填写报告</button>
+      <button class="nb" id="tnMyInfo" onclick="openMyInfo()" style="display:none">👤 我的资料</button>
       <button class="nb" id="tnAdmin" onclick="switchTab('admin')" style="display:none">⚙️ 管理后台</button>
       <button class="nb danger" onclick="doLogout()">退出</button>
     </div>
@@ -353,9 +354,20 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
     <!-- MEMBERS -->
     <div id="atMembers" style="display:none">
       <div class="a-sec">
-        <h3>👥 现有队员列表</h3>
-        <div style="overflow-x:auto"><table class="mem-table"><thead><tr><th>#</th><th>全名</th><th>用户名</th><th>密码</th><th>电话</th><th>操作</th></tr></thead><tbody id="memberTbody"></tbody></table></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <h3 style="margin:0;border:none;padding:0">👥 现有队员列表</h3>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="tr-btn" onclick="exportMembers('basic')">📄 导出基本信息</button>
+            <button class="tr-btn" onclick="exportMembers('full')">📋 导出完整资料</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto"><table class="mem-table"><thead><tr><th>#</th><th>全名</th><th>用户名</th><th>密码</th><th>电话</th><th>详细资料</th><th>操作</th></tr></thead><tbody id="memberTbody"></tbody></table></div>
         <div class="no-rec" id="noMember" style="display:none">暂无队员</div>
+        <div id="exportArea" style="display:none;margin-top:12px">
+          <div style="font-size:12px;color:var(--gray);margin-bottom:6px">📋 以下内容可直接复制（发 WhatsApp / 存档均可）：</div>
+          <textarea id="exportBox" class="bulk-area" style="min-height:180px;font-size:12px" readonly></textarea>
+          <button class="copy-btn" id="exportCopyBtn" onclick="copyExport()" style="margin-top:8px">📋 复制导出内容</button>
+        </div>
       </div>
       <div class="a-sec">
         <h3>➕ 添加单个队员</h3>
@@ -467,6 +479,15 @@ body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:
     <button class="cal-popup-close" onclick="closePopup()">✕</button>
   </div>
   <div class="cal-popup-body" id="popupBody"></div>
+</div>
+
+<div class="overlay" id="memOverlay" onclick="closeMemberDetail()"></div>
+<div class="cal-popup" id="memPopup" style="display:none;max-width:520px">
+  <div class="cal-popup-hdr">
+    <span id="memPopupTitle">队员详细资料</span>
+    <button class="cal-popup-close" onclick="closeMemberDetail()">✕</button>
+  </div>
+  <div class="cal-popup-body" id="memPopupBody"></div>
 </div>
 
 <script>
@@ -680,12 +701,15 @@ async function loadAllData() {
   if (!admins.some(a => a.super)) admins[0].super = true;
   ADMINS = admins;
   await setData('admins', ADMINS);  // persist migrated format
-  // Normalize members
+  // Normalize members — 保留所有已有字段（详细资料/紧急联系人等），只补齐缺失的默认值
   MEMBERS = MEMBERS.map(m => ({
-    name:     m.name     || m.username || '',
-    username: m.username || (m.name||'').toLowerCase().replace(/\s+/g,''),
-    password: m.password || 'pbs123',
-    phone:    m.phone    || ''
+    ...m,
+    name:      m.name     || m.username || '',
+    username:  m.username || (m.name||'').toLowerCase().replace(/\s+/g,''),
+    password:  m.password || 'pbs123',
+    phone:     m.phone    || '',
+    nickname:  m.nickname || '',
+    chineseName: m.chineseName || ''
   }));
 }
 
@@ -718,6 +742,7 @@ async function doLogin() {
   const roleLabel = currentRole==='admin' ? (isSuperAdmin?'主管理员':'管理员') : '队员';
   document.getElementById('hdrUser').textContent = `已登录: ${currentUser} (${roleLabel})`;
   if (currentRole==='admin') document.getElementById('tnAdmin').style.display='';
+  if (currentRole==='member') document.getElementById('tnMyInfo').style.display='';
   btn.disabled=false; btn.textContent='🔐 登录 / Log In';
   initApp();
 }
@@ -731,6 +756,7 @@ function doLogout() {
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('lu').value=''; document.getElementById('lp').value='';
   document.getElementById('tnAdmin').style.display='none';
+  document.getElementById('tnMyInfo').style.display='none';
   document.getElementById('lerr').style.display='none';
 }
 
@@ -929,7 +955,7 @@ function renderVRole(vk,rk) {
     const active=vAssign[vk][rk].includes(m.name);
     const t=document.createElement('span');
     t.className=`st ${rk}-t${active?` a-${rk}`:''}`;
-    t.textContent=m.name;
+    t.textContent = m.nickname ? `${m.nickname} (${m.name})` : m.name;
     t.onclick=()=>toggleMem(vk,rk,m.name);
     wrap.appendChild(t);
   });
@@ -1063,6 +1089,7 @@ function renderMemberTable() {
       <td><input class="edit-inp" value="${esc(m.username)}" onchange="editMem(${i},'username',this.value)"/></td>
       <td><input class="edit-inp" type="text" value="${esc(m.password)}" onchange="editMem(${i},'password',this.value)"/></td>
       <td><input class="edit-inp" value="${esc(m.phone)}" placeholder="—" onchange="editMem(${i},'phone',this.value)"/></td>
+      <td><button class="sm-btn blue" onclick="openMemberDetail(${i})">📋 详情</button></td>
       <td><button class="sm-btn red" onclick="delMember(${i})">删除</button></td>`;
     tb.appendChild(tr);
   });
@@ -1112,6 +1139,189 @@ async function bulkAddMembers(){
   if(skipped.length)msg+=`　⚠️ 跳过: ${skipped.join(', ')}`;
   if(errors.length)msg+=`　❌ 错误行: ${errors.length}`;
   document.getElementById('bulkResult').textContent=msg;
+}
+
+// ════════════════════════════════════════════════════
+//  MEMBER DETAIL — 详细资料弹窗（管理员可编辑，队员只读）
+// ════════════════════════════════════════════════════
+// 字段定义：基本信息
+const MEMBER_DETAIL_FIELDS = [
+  {key:'nickname',   label:'小名 / 昵称',     type:'text'},
+  {key:'chineseName',label:'中文全名',        type:'text'},
+  {key:'ic',      label:'身份证号码 (IC)', type:'text'},
+  {key:'age',     label:'年龄',           type:'text'},
+  {key:'race',    label:'种族',           type:'text'},
+  {key:'homeAddr',label:'住家地址',       type:'text'},
+  {key:'diet',    label:'饮食禁忌',       type:'text'},
+  {key:'blood',   label:'血型',           type:'text'},
+];
+// 健康状况（有/没有）
+const MEMBER_HEALTH_FIELDS = [
+  {key:'injury', label:'曾经受过伤'},
+  {key:'asthma', label:'有哮喘'},
+  {key:'meds',   label:'定期吃药'},
+];
+// 紧急联系人
+const EMERGENCY_FIELDS = [
+  {key:'ecName',  label:'姓名',       type:'text'},
+  {key:'ecPhone', label:'电话号码',   type:'text'},
+  {key:'ecRel',   label:'与队员关系', type:'text'},
+  {key:'ecAddr',  label:'地址（可空）', type:'text'},
+];
+
+let curDetailIdx = null;      // 当前查看的队员在 MEMBERS 中的索引
+let detailEditable = false;   // 是否可编辑（管理员=true，队员=false）
+let isMyOwnInfo = false;      // 是否是队员查看自己的资料（可改密码）
+
+function openMemberDetail(i) {
+  curDetailIdx = i;
+  detailEditable = (currentRole === 'admin');
+  isMyOwnInfo = false;  // 管理员查看他人资料，不显示改密码区
+  renderMemberDetail();
+  document.getElementById('memPopup').style.display = 'block';
+  document.getElementById('memOverlay').style.display = 'block';
+}
+function closeMemberDetail() {
+  document.getElementById('memPopup').style.display = 'none';
+  document.getElementById('memOverlay').style.display = 'none';
+  curDetailIdx = null;
+  isMyOwnInfo = false;
+}
+
+function renderMemberDetail() {
+  const m = MEMBERS[curDetailIdx];
+  document.getElementById('memPopupTitle').textContent = `${m.name} — 详细资料`;
+  const ro = !detailEditable; // read-only?
+  const body = document.getElementById('memPopupBody');
+
+  function textRow(f) {
+    const val = esc(m[f.key] || '');
+    if (ro) {
+      return `<div class="fr" style="margin-bottom:7px"><span class="fl" style="min-width:110px">${f.label}</span><span style="font-size:13px;color:var(--text)">${val || '—'}</span></div>`;
+    }
+    return `<div class="fr" style="margin-bottom:7px"><span class="fl" style="min-width:110px">${f.label}</span><input class="fi" value="${val}" onchange="editDetail('${f.key}',this.value)"/></div>`;
+  }
+  function healthRow(f) {
+    const yes = m[f.key] === true || m[f.key] === '有';
+    if (ro) {
+      return `<div class="fr" style="margin-bottom:7px"><span class="fl" style="min-width:110px">${f.label}</span><span style="font-size:13px;font-weight:600;color:${yes?'var(--red)':'var(--gray)'}">${yes?'✅ 有':'⬜ 没有'}</span></div>`;
+    }
+    return `<div class="fr" style="margin-bottom:7px"><span class="fl" style="min-width:110px">${f.label}</span>
+      <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px">
+        <input type="checkbox" ${yes?'checked':''} onchange="editHealth('${f.key}',this.checked)" style="width:16px;height:16px"/> 有
+      </label></div>`;
+  }
+
+  let html = `<div style="font-size:12px;font-weight:700;color:var(--navy);margin:2px 0 8px;border-bottom:2px solid var(--gray-light);padding-bottom:4px">👤 基本信息</div>`;
+  html += MEMBER_DETAIL_FIELDS.map(textRow).join('');
+  html += `<div style="font-size:12px;font-weight:700;color:var(--navy);margin:12px 0 8px;border-bottom:2px solid var(--gray-light);padding-bottom:4px">🏥 健康状况</div>`;
+  html += MEMBER_HEALTH_FIELDS.map(healthRow).join('');
+  html += `<div style="font-size:12px;font-weight:700;color:var(--navy);margin:12px 0 8px;border-bottom:2px solid var(--gray-light);padding-bottom:4px">🆘 紧急联系人</div>`;
+  html += EMERGENCY_FIELDS.map(textRow).join('');
+
+  // 队员查看自己资料时，额外显示"修改密码"区域
+  if (isMyOwnInfo) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--navy);margin:12px 0 8px;border-bottom:2px solid var(--gray-light);padding-bottom:4px">🔑 修改我的密码</div>
+      <div class="fr" style="margin-bottom:7px"><span class="fl" style="min-width:110px">当前密码</span><input class="fi" id="pwOld" type="password" placeholder="请输入当前密码"/></div>
+      <div class="fr" style="margin-bottom:7px"><span class="fl" style="min-width:110px">新密码</span><input class="fi" id="pwNew" type="password" placeholder="设定新密码"/></div>
+      <div class="fr" style="margin-bottom:7px"><span class="fl" style="min-width:110px">确认新密码</span><input class="fi" id="pwNew2" type="password" placeholder="再次输入新密码"/></div>
+      <button class="ab" onclick="changeMyPassword()">💾 保存新密码</button>
+      <div id="pwMsg" class="tr-status"></div>`;
+  }
+
+  if (ro && !isMyOwnInfo) {
+    html += `<div style="margin-top:14px;font-size:11px;color:var(--gray);text-align:center">🔒 仅管理员可编辑资料</div>`;
+  } else if (ro && isMyOwnInfo) {
+    html += `<div style="margin-top:14px;font-size:11px;color:var(--gray);text-align:center">🔒 资料内容仅管理员可编辑，密码可自行修改</div>`;
+  } else {
+    html += `<div style="margin-top:14px;font-size:11px;color:var(--success);text-align:center">✅ 修改后自动保存并同步云端</div>`;
+  }
+  body.innerHTML = html;
+}
+
+async function editDetail(key, val) {
+  if (!detailEditable || curDetailIdx===null) return;
+  MEMBERS[curDetailIdx][key] = val.trim();
+  await setData('members', MEMBERS);
+}
+async function editHealth(key, checked) {
+  if (!detailEditable || curDetailIdx===null) return;
+  MEMBERS[curDetailIdx][key] = checked ? '有' : '没有';
+  await setData('members', MEMBERS);
+}
+
+// 队员自行修改密码（不需要 detailEditable，因为这是队员本人操作）
+async function changeMyPassword() {
+  if (curDetailIdx === null) return;
+  const oldPass = document.getElementById('pwOld').value.trim();
+  const newPass = document.getElementById('pwNew').value.trim();
+  const newPass2 = document.getElementById('pwNew2').value.trim();
+  const msg = document.getElementById('pwMsg');
+  const m = MEMBERS[curDetailIdx];
+
+  if (!oldPass) { msg.textContent = '❌ 请输入当前密码'; return; }
+  if (oldPass !== m.password) { msg.textContent = '❌ 当前密码不正确'; return; }
+  if (!newPass) { msg.textContent = '❌ 请输入新密码'; return; }
+  if (newPass !== newPass2) { msg.textContent = '❌ 两次输入的新密码不一致'; return; }
+
+  MEMBERS[curDetailIdx].password = newPass;
+  await setData('members', MEMBERS);
+  msg.textContent = '✅ 密码已更新！下次登录请用新密码。';
+  document.getElementById('pwOld').value='';
+  document.getElementById('pwNew').value='';
+  document.getElementById('pwNew2').value='';
+}
+
+// 队员查看自己的资料（资料只读，但可改密码）
+function openMyInfo() {
+  const idx = MEMBERS.findIndex(m => m.name === currentUser);
+  if (idx === -1) { alert('找不到你的资料，请联系管理员'); return; }
+  curDetailIdx = idx;
+  detailEditable = false;  // 资料只读
+  isMyOwnInfo = true;      // 但允许改密码
+  renderMemberDetail();
+  document.getElementById('memPopup').style.display = 'block';
+  document.getElementById('memOverlay').style.display = 'block';
+}
+
+// ════════════════════════════════════════════════════
+//  导出队员资料（仅管理员）— 生成可复制文字
+// ════════════════════════════════════════════════════
+function exportMembers(mode) {
+  if (currentRole !== 'admin') return;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  let out = `茂奥斯汀义务消防队 PBS BOMBA AUSTIN\n队员名单 — 导出日期：${dateStr}\n共 ${MEMBERS.length} 名队员\n`;
+  out += '═══════════════════════════\n\n';
+
+  MEMBERS.forEach((m, i) => {
+    const displayName = m.nickname ? `${m.name}（${m.nickname}）` : m.name;
+    out += `${i+1}. ${displayName || '—'}\n`;
+    if (m.chineseName) out += `   中文全名：${m.chineseName}\n`;
+    out += `   用户名：${m.username || '—'}　电话：${m.phone || '—'}\n`;
+    if (mode === 'full') {
+      out += `   身份证：${m.ic || '—'}　年龄：${m.age || '—'}　种族：${m.race || '—'}\n`;
+      out += `   血型：${m.blood || '—'}　饮食禁忌：${m.diet || '—'}\n`;
+      out += `   住家地址：${m.homeAddr || '—'}\n`;
+      out += `   健康：受过伤[${m.injury==='有'?'✓':'✗'}] 哮喘[${m.asthma==='有'?'✓':'✗'}] 定期吃药[${m.meds==='有'?'✓':'✗'}]\n`;
+      out += `   紧急联系人：${m.ecName || '—'}（${m.ecRel || '关系未填'}）电话：${m.ecPhone || '—'}\n`;
+      if (m.ecAddr) out += `   紧急联系人地址：${m.ecAddr}\n`;
+    }
+    out += '\n';
+  });
+  out += '═══════════════════════════\n#PBSBombaAustin';
+
+  document.getElementById('exportBox').value = out;
+  document.getElementById('exportArea').style.display = 'block';
+  document.getElementById('exportArea').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function copyExport() {
+  const txt = document.getElementById('exportBox').value;
+  const btn = document.getElementById('exportCopyBtn');
+  const done = () => { btn.textContent='✅ 已复制！'; setTimeout(()=>{btn.textContent='📋 复制导出内容';},2500); };
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done).catch(()=>{legacyCopy(txt);done();});
+  else { legacyCopy(txt); done(); }
 }
 
 // ════════════════════════════════════════════════════
