@@ -8,6 +8,7 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <style>
 :root{
@@ -519,6 +520,11 @@ const FIREBASE_CONFIG = {
 // ════════════════════════════════════════════════════
 let db = null;
 let isCloudReady = false;
+let auth = null;
+
+// 后台自动解锁用的验证账号（数据库锁着，靠这个账号解锁）
+const CLOUD_AUTH_EMAIL = 'pbs@bomba.com';
+const CLOUD_AUTH_PASS  = 'pbs6994';
 
 function setCloudStatus(state, msg) {
   const dot = document.getElementById('cloudDot');
@@ -527,27 +533,37 @@ function setCloudStatus(state, msg) {
   txt.textContent = msg;
 }
 
+// 初始化：连接 App，后台自动验证解锁数据库（队员无感）
 function initFirebase() {
   try {
     if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
-      setCloudStatus('error', '⚠️ 尚未配置 Firebase — 数据暂存本地，不跨设备共享');
+      setCloudStatus('error', '⚠️ 尚未配置 Firebase — 请先填写云端配置');
       isCloudReady = false;
       return;
     }
     firebase.initializeApp(FIREBASE_CONFIG);
+    auth = firebase.auth();
     db = firebase.database();
     setCloudStatus('connecting', '正在连接云端...');
-    db.ref('.info/connected').on('value', snap => {
-      if (snap.val()) {
-        setCloudStatus('connected', '☁️ 云端已连接 — 所有数据实时同步');
-        isCloudReady = true;
-      } else {
-        setCloudStatus('connecting', '⚠️ 云端断线中，稍后重试...');
+    // 后台自动用验证账号登录，解锁数据库
+    auth.signInWithEmailAndPassword(CLOUD_AUTH_EMAIL, CLOUD_AUTH_PASS)
+      .then(() => {
+        db.ref('.info/connected').on('value', snap => {
+          if (snap.val()) {
+            setCloudStatus('connected', '☁️ 云端已连接 — 所有数据实时同步');
+            isCloudReady = true;
+          } else {
+            setCloudStatus('connecting', '⚠️ 云端断线中，稍后重试...');
+            isCloudReady = false;
+          }
+        });
+      })
+      .catch(() => {
+        setCloudStatus('error', '❌ 云端验证失败，请联系管理员');
         isCloudReady = false;
-      }
-    });
+      });
   } catch(e) {
-    setCloudStatus('error', '❌ Firebase 连接失败，使用本地模式');
+    setCloudStatus('error', '❌ Firebase 初始化失败');
     isCloudReady = false;
   }
 }
