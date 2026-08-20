@@ -22,11 +22,13 @@
 body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);background-image:linear-gradient(180deg,#E8ECF3 0%,#EEF1F6 240px);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ── CLOUD STATUS BAR ── */
-.cloud-bar{background:#1E3A5F;color:#fff;text-align:center;padding:6px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px}
+.cloud-bar{background:#1E3A5F;color:#fff;text-align:center;padding:6px 88px 6px 12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px;position:relative;min-height:31px}
 .cloud-dot{width:8px;height:8px;border-radius:50%;background:#6B7280;flex-shrink:0;transition:background .3s}
 .cloud-dot.connected{background:#22C55E}
 .cloud-dot.connecting{background:#F59E0B;animation:pulse .8s infinite}
 .cloud-dot.error{background:#EF4444}
+.lang-btn{position:absolute;right:9px;top:4px;padding:3px 9px;border:1px solid rgba(255,255,255,.55);border-radius:13px;background:rgba(255,255,255,.12);color:#fff;font-size:11px;font-weight:700;cursor:pointer}
+.lang-btn:hover{background:rgba(255,255,255,.24)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── LOGIN ── */
@@ -92,6 +94,7 @@ body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-s
 .fi[type="date"]{cursor:pointer}
 .now-btn{padding:7px 11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .now-btn:hover{background:var(--navy-light)}
+.time-direct{flex:0 1 155px;min-width:135px;max-width:155px}
 
 /* ── PHOTO UPLOAD ── */
 .photo-zone{border:2px dashed var(--gray-light);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFAFA;position:relative;overflow:hidden}
@@ -111,6 +114,10 @@ body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-s
 /* ── VEHICLE ── */
 .v-section{margin-bottom:12px;border:1px solid var(--gray-light);border-radius:10px;padding:12px}
 .v-label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px}
+.headcount-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px;padding:11px 12px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px}
+.headcount-row label{font-size:13px;font-weight:700;color:var(--navy)}
+.headcount-input{max-width:120px;min-width:90px}
+.headcount-hint{font-size:11px;color:var(--gray)}
 .rr{display:flex;align-items:flex-start;gap:7px;margin-bottom:6px}
 .rb{min-width:50px;padding:3px 7px;border-radius:5px;font-size:11px;font-weight:700;text-align:center;flex-shrink:0;margin-top:2px}
 .rb.sv{background:#FEF3C7;color:#92400E}.rb.dr{background:#DBEAFE;color:#1E40AF}.rb.mb{background:#D1FAE5;color:#065F46}
@@ -211,6 +218,7 @@ body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-s
 <div class="cloud-bar">
   <span class="cloud-dot" id="cloudDot"></span>
   <span id="cloudStatus">正在连接云端数据库...</span>
+  <button class="lang-btn" id="langToggle" type="button" onclick="toggleLanguage()">English</button>
 </div>
 
 <!-- ═══ LOGIN ═══ -->
@@ -307,7 +315,7 @@ body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-s
 
   <!-- 时间记录 -->
   <div class="card">
-    <div class="ch teal">⏱ 时间记录 <span style="font-weight:400;font-size:11px;opacity:.8">（24小时制 HH:MM）</span></div>
+    <div class="ch teal">⏱ 时间记录 <span style="font-weight:400;font-size:11px;opacity:.8">（24小时制，直接输入无需冒号）</span></div>
     <div class="cb" id="timeSection"></div>
   </div>
 
@@ -503,6 +511,169 @@ body{font-family:'Segoe UI',-apple-system,'PingFang SC','Microsoft YaHei',sans-s
 
 <script>
 // ════════════════════════════════════════════════════
+//  UI LANGUAGE — 只翻译前端，不改动马来文报告格式
+// ════════════════════════════════════════════════════
+const UI_EN = {
+  '正在连接云端数据库...':'Connecting to cloud database...',
+  '🧪 本地预览模式 — 使用本地测试资料':'🧪 Local preview — using local test data',
+  '⚠️ 尚未配置 Firebase — 请先填写云端配置':'⚠️ Firebase is not configured',
+  '正在连接云端...':'Connecting to cloud...', '☁️ 云端已连接 — 所有数据实时同步':'☁️ Cloud connected — all data synced in real time',
+  '⚠️ 云端断线中，稍后重试...':'⚠️ Cloud disconnected. Retrying...', '❌ 云端验证失败，请联系管理员':'❌ Cloud authentication failed. Contact an administrator.',
+  '❌ Firebase 初始化失败':'❌ Firebase initialization failed',
+  '茂奥斯汀义务消防队':'Mount Austin Volunteer Fire Brigade',
+  '用户名 / Username':'Username', '密码 / Password':'Password',
+  '🔐 登录 / Log In':'🔐 Log In', '用户名或密码错误，请重试。':'Incorrect username or password. Please try again.',
+  '📝 填写报告':'📝 Fill Report', '👤 我的资料':'👤 My Profile', '📇 队员名册':'📇 Member Directory',
+  '⚙️ 管理后台':'⚙️ Admin', '退出':'Log Out',
+  '📷 照片识别 — 自动提取地址 & 时间':'📷 Photo Recognition — Extract Address & Time',
+  '📌 上传现场照片，AI 将自动识别':'📌 Upload a scene photo. AI will identify the',
+  '抵达现场时间':'arrival time', '及':'and', '事故地址':'incident address', '，识别后一键填入表单。':'. Apply the results to the form with one click.',
+  '点击上传现场照片':'Click to upload a scene photo', '支持 JPG · PNG · HEIC · 最大 10MB':'JPG · PNG · HEIC · Max 10MB',
+  '⏳ AI 正在识别照片内容，请稍候...':'⏳ AI is analysing the photo. Please wait...',
+  '📍 识别到的地址':'📍 Detected Address', '⏰ 识别到的时间（抵达现场）':'⏰ Detected Time (Arrival)',
+  '✅ 填入表单':'✅ Apply to Form', '🔄 重新上传':'🔄 Upload Again',
+  '✅ 已复制！':'✅ Copied!',
+  '🔥 事故类型':'🔥 Incident Type', '（点击选择）':'(click to select)',
+  '➕ 临时添加新案件类型（中文 + 马来文手动输入）':'➕ Add a temporary incident type (enter Chinese + Malay manually)',
+  '中文案件名称，例：化学品泄漏':'Chinese incident name, e.g. 化学品泄漏', '马来文，例：Tumpahan Kimia':'Malay, e.g. Tumpahan Kimia',
+  '图标':'Icon', '✓ 添加':'✓ Add', '📋 基本资料':'📋 Basic Information', '事故日期':'Incident Date', '今天':'Today',
+  '报案人':'Caller', '联络号码':'Contact Number', '距离':'Distance',
+  '📝 事故详情（Maklumat Kejadian — 请输入马来文）':'📝 Incident Details (Maklumat Kejadian — please enter in Malay)',
+  '⏱ 时间记录':'⏱ Time Record', '（24小时制，直接输入无需冒号）':'(24-hour format; no colon needed for direct entry)',
+  '🚒 出队车辆与人员':'🚒 Vehicles & Personnel', '⚡ 生成报告 / Jana Laporan':'⚡ Generate Report / Jana Laporan',
+  '✅ 报告已生成 — 复制后发送 WhatsApp':'✅ Report Generated — Copy and Send via WhatsApp',
+  '📋 复制报告 / Salin Laporan':'📋 Copy Report / Salin Laporan',
+  '仅限管理员访问':'Administrators only', '📊 总览':'📊 Overview', '👥 队员管理':'👥 Member Management',
+  '🔥 案件类型':'🔥 Incident Types', '📅 月份日历':'📅 Monthly Calendar', '📁 历史记录':'📁 Records', '🔑 管理员设置':'🔑 Admin Settings',
+  '总案件数':'Total Incidents', '注册队员':'Registered Members', '本月案件':'This Month', '📊 案件类型统计':'📊 Incident Statistics',
+  '加载中...':'Loading...', '👥 现有队员列表':'👥 Current Members', '📄 导出基本信息':'📄 Export Basic Info',
+  '📋 导出完整资料':'📋 Export Full Details', '全名':'Full Name', '用户名':'Username', '密码':'Password', '电话':'Phone',
+  '详细资料':'Details', '操作':'Actions', '暂无队员':'No members',
+  '📋 以下内容可直接复制（发 WhatsApp / 存档均可）：':'📋 Copy the content below for WhatsApp or your records:',
+  '📋 复制导出内容':'📋 Copy Export', '➕ 添加单个队员':'➕ Add One Member', '全名 Full Name':'Full Name',
+  '用户名（登录用）':'Username (for login)', '电话（选填）':'Phone (optional)', '➕ 添加':'➕ Add',
+  '📋 批量注册队员':'📋 Register Members in Bulk',
+  '每行一个队员，格式：':'One member per line. Format:', '全名 , 用户名 , 密码 , 电话（选填）':'Full name, username, password, phone (optional)',
+  '例：':'Example:', '⚡ 批量注册':'⚡ Register in Bulk', '清空':'Clear',
+  '🔥 案件类型管理':'🔥 Manage Incident Types', '➕ 添加新案件类型':'➕ Add Incident Type',
+  '中文名称':'Chinese Name', '马来文名称':'Malay Name', '◀ 上月':'◀ Previous Month', '下月 ▶':'Next Month ▶',
+  '📁 历史记录（云端同步）':'📁 Records (Cloud Sync)', '日期时间':'Date & Time', '地点':'Location', '填报人':'Submitted By', '暂无记录':'No records',
+  '🔑 我的管理员账号':'🔑 My Admin Account', '修改用户名 / 密码（需输入旧密码验证）':'Change username/password (current password required)',
+  '旧密码':'Current Password', '新用户名':'New Username', '新密码':'New Password', '确认新密码':'Confirm New Password',
+  '请输入当前密码':'Enter current password', '留空则不修改用户名':'Leave blank to keep current username',
+  '留空则不修改密码':'Leave blank to keep current password', '再次输入新密码':'Enter new password again', '💾 保存修改':'💾 Save Changes',
+  '⚠️ 修改用户名或密码后，请用新的信息重新登录。系统会自动保存，不会丢失数据。':'⚠️ After changing your username or password, use the new details to log in. Changes are saved automatically.',
+  '👑 管理其他管理员（仅主管理员）':'👑 Manage Other Administrators (Super Admin Only)', '名称':'Name', '权限':'Permission',
+  '➕ 添加新管理员':'➕ Add Administrator', '名称（如：副队长）':'Name (e.g. Deputy Captain)',
+  '设为主管理员（可管理其他管理员）':'Set as super admin (can manage other administrators)', '➕ 添加管理员':'➕ Add Administrator',
+  '案件详情':'Incident Details', '队员详细资料':'Member Details', '📇 队员名册（秘书查看）':'📇 Member Directory (Secretary View)',
+  '车辆着火':'Vehicle Fire', '屋子着火':'House Fire', '工厂着火':'Factory Fire', '店屋着火':'Shoplot Fire',
+  '草丛着火':'Grass Fire', '树林野火':'Wildfire', '处理蜜蜂':'Bee Removal', '处理虎头蜂':'Hornet Removal',
+  '抓蛇':'Snake Removal', '视察闪电水灾':'Flash Flood Inspection', '水灾救援':'Flood Rescue', '处理车祸':'Road Accident',
+  '处理树倒':'Fallen Tree', '救猫':'Cat Rescue', '救狗':'Dog Rescue', '抓四脚蛇':'Monitor Lizard Removal', '抓果子狸':'Civet Removal',
+  '接获报案':'Call Received', '车辆出发':'Vehicle Departed', '抵达现场':'Arrived at Scene', '开始行动':'Operation Started',
+  '行动受控':'Operation Under Control', '行动结束':'Operation Ended', '离开现场':'Departed Scene', '抵达消防局':'Arrived at Station',
+  '现在':'Now', '直接输入时间':'Enter time directly', '👥 出队总人数':'👥 Personnel Count', '人数':'Number',
+  '人数会显示在报告的 KEANGGOTAAN PBS TMA 后面':'The number will appear after KEANGGOTAAN PBS TMA in the report',
+  '主管':'Supervisor', '驾驶':'Driver', '队员':'Member', '主管理员':'Super Admin', '管理员':'Administrator', '秘书':'Secretary',
+  '队员':'Member', '验证中...':'Verifying...', '⏳ 生成中...':'⏳ Generating...', '未能识别地址':'Address not detected', '未能识别时间':'Time not detected',
+  '❌ 识别失败，请手动填写。':'❌ Recognition failed. Please enter the details manually.', '✅ 已填入表单！请检查确认内容。':'✅ Applied to the form. Please check the details.',
+  '暂无数据':'No data', '📋 详情':'📋 Details', '✅ 秘书':'✅ Secretary', '设为秘书':'Make Secretary', '删除':'Delete',
+  '小名 / 昵称':'Nickname', '中文全名':'Chinese Full Name', '身份证号码 (IC)':'Identity Card No. (IC)', '年龄':'Age', '种族':'Race',
+  '住家地址':'Home Address', '饮食禁忌':'Dietary Restrictions', '血型':'Blood Type', '曾经受过伤':'Previous Injury',
+  '有哮喘':'Asthma', '定期吃药':'Regular Medication', '姓名':'Name', '电话号码':'Phone Number', '与队员关系':'Relationship', '地址（可空）':'Address (optional)',
+  '👤 基本信息':'👤 Basic Information', '🏥 健康状况':'🏥 Health Information', '🆘 紧急联系人':'🆘 Emergency Contact',
+  '✅ 有':'✅ Yes', '⬜ 没有':'⬜ No', '有':'Yes', '🔑 修改我的密码':'🔑 Change My Password', '当前密码':'Current Password',
+  '设定新密码':'Set a new password', '💾 保存新密码':'💾 Save New Password', '🔒 仅管理员可编辑资料':'🔒 Only administrators can edit details',
+  '🔒 资料内容仅管理员可编辑，密码可自行修改':'🔒 Only administrators can edit profile details. You may change your password.',
+  '✅ 修改后自动保存并同步云端':'✅ Changes are saved and synced automatically', '英文全名':'English Full Name', '小名':'Nickname', '中文名':'Chinese Name', '资料':'Details',
+  '📋 查看':'📋 View', '查看':'View', '报告':'Report', '无内容':'No content',
+  '当前登录：':'Signed in as:', '权限：':'Permission:', '升为主管':'Promote to Super Admin', '降为普通':'Change to Regular Admin', '（主管理员）':'(Super Admin)',
+  '❌ 请填写中文和马来文名称！':'❌ Enter both Chinese and Malay names.', '❌ 请填写中文和马来文！':'❌ Enter both Chinese and Malay.',
+  '❌ 请填写全名、用户名和密码':'❌ Enter full name, username, and password.', '❌ 请先输入内容':'❌ Enter the required content first.',
+  '❌ 请输入当前密码':'❌ Enter your current password.', '❌ 当前密码不正确':'❌ Current password is incorrect.',
+  '❌ 请输入新密码':'❌ Enter a new password.', '❌ 两次输入的新密码不一致':'❌ The new passwords do not match.',
+  '✅ 密码已更新！下次登录请用新密码。':'✅ Password updated. Use the new password next time you log in.',
+  '❌ 请输入旧密码进行验证':'❌ Enter your current password for verification.', '❌ 旧密码错误，无法修改':'❌ Current password is incorrect.',
+  '❌ 请至少填写新用户名或新密码':'❌ Enter a new username or password.', '❌ 系统错误：找不到当前账号':'❌ System error: current account not found.',
+  '✅ 修改成功！下次请用新的用户名/密码登录。':'✅ Changes saved. Use the new username/password next time you log in.',
+  '❌ 请填写用户名和密码':'❌ Enter a username and password.',
+  '日':'Sun', '一':'Mon', '二':'Tue', '三':'Wed', '四':'Thu', '五':'Fri', '六':'Sat'
+};
+
+let currentLanguage = localStorage.getItem('pbsTmaLanguage') === 'en' ? 'en' : 'zh';
+const originalUiText = new WeakMap();
+const originalUiAttrs = new WeakMap();
+let languageObserver = null;
+
+function ui(zh,en) { return currentLanguage==='en' ? en : zh; }
+function translateUiCore(text) {
+  if (UI_EN[text]) return UI_EN[text];
+  let m;
+  if ((m=text.match(/^(.+)时间选择$/))) return `Select ${translateUiCore(m[1])} time`;
+  if ((m=text.match(/^直接输入(.+)时间$/))) return `Enter ${translateUiCore(m[1])} time directly`;
+  if ((m=text.match(/^已登录: (.+) \((.+)\)$/))) return `Signed in: ${m[1]} (${translateUiCore(m[2])})`;
+  if ((m=text.match(/^(\d+)案$/))) return `${m[1]} case${m[1]==='1'?'':'s'}`;
+  if ((m=text.match(/^✅ 已添加并同步到云端：(.+)$/))) return `✅ Added and synced to cloud: ${m[1]}`;
+  if ((m=text.match(/^✅ 已添加并同步：(.+)$/))) return `✅ Added and synced: ${m[1]}`;
+  if ((m=text.match(/^✅ 已添加并同步: (.+)$/))) return `✅ Added and synced: ${m[1]}`;
+  if ((m=text.match(/^❌ 用户名 "(.+)" 已存在$/))) return `❌ Username "${m[1]}" already exists.`;
+  if ((m=text.match(/^✅ 注册成功 (\d+) 人$/))) return `✅ ${m[1]} member${m[1]==='1'?'':'s'} registered`;
+  if ((m=text.match(/^✅ 已添加管理员: (.+)$/))) return `✅ Administrator added: ${m[1]}`;
+  if ((m=text.match(/^(\d{4})年(\d+)月$/))) return `${m[2]}/${m[1]}`;
+  if ((m=text.match(/^(\d{4})年(\d+)月(\d+)日 — (\d+)件案$/))) return `${m[3]}/${m[2]}/${m[1]} — ${m[4]} case${m[4]==='1'?'':'s'}`;
+  if ((m=text.match(/^共 (\d+) 名队员 · 点「查看」看详细资料（不含用户名\/密码，只读）$/))) return `${m[1]} members · Select “View” for read-only details (username/password hidden)`;
+  if ((m=text.match(/^(.+) — 详细资料$/))) return `${m[1]} — Member Details`;
+  return text;
+}
+function localizeTextNode(node) {
+  if (node.parentElement?.closest('#outputBox,#exportBox,script,style,pre,code')) return;
+  if (!originalUiText.has(node)) originalUiText.set(node,node.nodeValue);
+  const original=originalUiText.get(node);
+  if (currentLanguage==='zh') { node.nodeValue=original; return; }
+  const trimmed=original.trim(); if (!trimmed) return;
+  node.nodeValue=original.replace(trimmed,translateUiCore(trimmed));
+}
+function localizeElementAttrs(el) {
+  if (!(el instanceof Element)||el.closest('#outputBox,#exportBox')) return;
+  let originals=originalUiAttrs.get(el);
+  if (!originals) { originals={}; originalUiAttrs.set(el,originals); }
+  ['placeholder','aria-label','title'].forEach(attr=>{
+    if (!el.hasAttribute(attr)) return;
+    if (!(attr in originals)) originals[attr]=el.getAttribute(attr);
+    el.setAttribute(attr,currentLanguage==='en'?translateUiCore(originals[attr]):originals[attr]);
+  });
+}
+function applyLanguage(root=document) {
+  if (!document.body) return;
+  if (languageObserver) languageObserver.disconnect();
+  if (root.nodeType===Node.TEXT_NODE) localizeTextNode(root);
+  const base=root.nodeType===Node.ELEMENT_NODE?root:document.body;
+  if (base.nodeType===Node.ELEMENT_NODE) localizeElementAttrs(base);
+  const walker=document.createTreeWalker(base,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);
+  let node; while ((node=walker.nextNode())) {
+    if (node.nodeType===Node.TEXT_NODE) localizeTextNode(node); else localizeElementAttrs(node);
+  }
+  document.documentElement.lang=currentLanguage==='en'?'en':'zh';
+  document.title=currentLanguage==='en'?'Mount Austin Volunteer Fire Brigade — PBS BOMBA AUSTIN':'茂奥斯汀义务消防队 PBS BOMBA AUSTIN';
+  const toggle=document.getElementById('langToggle'); if (toggle) toggle.textContent=currentLanguage==='en'?'中文':'English';
+  if (languageObserver) languageObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
+}
+function toggleLanguage() {
+  currentLanguage=currentLanguage==='zh'?'en':'zh';
+  localStorage.setItem('pbsTmaLanguage',currentLanguage);
+  applyLanguage(document);
+}
+function initLanguage() {
+  languageObserver=new MutationObserver(mutations=>{
+    languageObserver.disconnect();
+    mutations.forEach(m=>{ if (m.type==='characterData') originalUiText.set(m.target,m.target.nodeValue); });
+    applyLanguage(document);
+  });
+  applyLanguage(document);
+}
+
+// ════════════════════════════════════════════════════
 //  🔥 FIREBASE CONFIG — PBS TMA 专属配置（已连接云端）
 // ════════════════════════════════════════════════════
 const FIREBASE_CONFIG = {
@@ -521,6 +692,7 @@ const FIREBASE_CONFIG = {
 let db = null;
 let isCloudReady = false;
 let auth = null;
+const IS_LOCAL_HOST = location.hostname==='localhost' || location.hostname==='127.0.0.1';
 
 // 后台自动解锁用的验证账号（数据库锁着，靠这个账号解锁）
 const CLOUD_AUTH_EMAIL = 'pbs@bomba.com';
@@ -536,6 +708,10 @@ function setCloudStatus(state, msg) {
 // 初始化：连接 App，后台自动验证解锁数据库（队员无感）
 function initFirebase() {
   try {
+    if (IS_LOCAL_HOST) {
+      setCloudStatus('error', '🧪 本地预览模式 — 使用本地测试资料');
+      return;
+    }
     if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
       setCloudStatus('error', '⚠️ 尚未配置 Firebase — 请先填写云端配置');
       isCloudReady = false;
@@ -567,6 +743,7 @@ function initFirebase() {
     isCloudReady = false;
   }
 }
+initLanguage();
 initFirebase();
 
 // ════════════════════════════════════════════════════
@@ -647,7 +824,7 @@ function DEFAULT_INCIDENTS() {
 //  UNIFIED DATA LAYER
 //  Reads/writes to Firebase if available, else local
 // ════════════════════════════════════════════════════
-let LOCAL = getLocalDB();
+let LOCAL = IS_LOCAL_HOST ? buildDefaultDB() : getLocalDB();
 
 async function getData(key) {
   if (!isCloudReady) return LOCAL[key];
@@ -702,6 +879,7 @@ const TIME_FIELDS = [
 let currentUser=null, currentRole=null, selectedInc=null;
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
 let vAssign={v1:{sv:[],dr:[],mb:[]},v2:{sv:[],dr:[],mb:[]},v3:{sv:[],dr:[],mb:[]}};
+let totalHeadcount='';
 let photoData=null;
 let MEMBERS=[], INCIDENTS=[], RECORDS=[], ADMINS=[];
 let currentAdmin=null;        // the logged-in admin object
@@ -782,6 +960,7 @@ function doLogout() {
   currentUser=null; currentRole=null; selectedInc=null;
   currentAdmin=null; isSuperAdmin=false;
   vAssign={v1:{sv:[],dr:[],mb:[]},v2:{sv:[],dr:[],mb:[]},v3:{sv:[],dr:[],mb:[]}};
+  totalHeadcount='';
   photoData=null;
   document.getElementById('appWrap').style.display='none';
   document.getElementById('loginWrap').style.display='flex';
@@ -893,7 +1072,10 @@ No other text.`}
 function applyPhotoData() {
   if (!photoData) return;
   if (photoData.addr) document.getElementById('address').value = photoData.addr;
-  if (photoData.time) document.getElementById('tSampai').value = photoData.time;
+  if (photoData.time) {
+    document.getElementById('tSampai').value = photoData.time;
+    syncDirectFromPicker('tSampai');
+  }
   document.getElementById('address').scrollIntoView({behavior:'smooth',block:'center'});
   const box = document.getElementById('aiResultBox');
   const ok = document.createElement('div');
@@ -948,28 +1130,54 @@ function renderTimeFields() {
   TIME_FIELDS.forEach(f => {
     const d = document.createElement('div'); d.className='fr';
     d.innerHTML=`<span class="fl" style="font-size:12px">${f.zh}</span>
-      <input class="fi" id="${f.id}" type="time"/>
-      <button class="now-btn" onclick="setNow('${f.id}')">现在</button>`;
+      <input class="fi" id="${f.id}" type="time" aria-label="${f.zh}时间选择" oninput="syncDirectFromPicker('${f.id}')"/>
+      <button class="now-btn" type="button" onclick="setNow('${f.id}')">现在</button>
+      <input class="fi time-direct" id="${f.id}Direct" type="text" inputmode="numeric"
+        placeholder="直接输入时间" aria-label="直接输入${f.zh}时间"/>`;
     sec.appendChild(d);
   });
+  applyLanguage(sec);
 }
 function setNow(id) {
   const n=new Date();
   document.getElementById(id).value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+  syncDirectFromPicker(id);
+}
+function syncDirectFromPicker(id) {
+  const picker=document.getElementById(id);
+  const direct=document.getElementById(id+'Direct');
+  if (picker&&direct) {
+    direct.value=picker.value.replace(':','');
+  }
+}
+function getTimeValue(id) {
+  const direct=document.getElementById(id+'Direct')?.value.trim();
+  if (direct) return direct;
+  return (document.getElementById(id)?.value||'').replace(':','');
 }
 function getDateStr() {
   const v = document.getElementById('incDate').value;
   if (!v) return '-';
   const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`;
 }
-function fmtFull(id) { const t=document.getElementById(id)?.value; return t?`${getDateStr()} - ${t}`:'-'; }
-function fmtTime(id) { return document.getElementById(id)?.value||'-'; }
+function fmtTime(id) {
+  const t=getTimeValue(id);
+  if (!t) return '-';
+  return /^\d{4}$/.test(t) ? `${t.slice(0,2)}:${t.slice(2)}` : t;
+}
 
 // ════════════════════════════════════════════════════
 //  VEHICLES
 // ════════════════════════════════════════════════════
 function renderVehicles() {
   const sec=document.getElementById('vehicleSection'); sec.innerHTML='';
+  const headcount=document.createElement('div'); headcount.className='headcount-row';
+  headcount.innerHTML=`<label for="totalHeadcount">👥 出队总人数</label>
+    <input class="fi headcount-input" id="totalHeadcount" type="number" min="0" max="99" step="1"
+      inputmode="numeric" placeholder="人数" value="${totalHeadcount}"
+      oninput="totalHeadcount=this.value"/>
+    <span class="headcount-hint">人数会显示在报告的 KEANGGOTAAN PBS TMA 后面</span>`;
+  sec.appendChild(headcount);
   VEHICLES.forEach(v=>{
     const wrap=document.createElement('div'); wrap.className='v-section';
     wrap.innerHTML=`<div class="v-label"><span>🚒</span>${v.plate} — ${v.name}</div>
@@ -1012,7 +1220,7 @@ function toggleMem(vk,rk,name) {
 //  GENERATE REPORT
 // ════════════════════════════════════════════════════
 async function generateReport() {
-  if (selectedInc===null) { alert('请先选择事故类型！'); return; }
+  if (selectedInc===null) { alert(ui('请先选择事故类型！','Please select an incident type first.')); return; }
   const btn=document.getElementById('genBtn');
   btn.disabled=true; btn.textContent='⏳ 生成中...';
   const inc=INCIDENTS[selectedInc];
@@ -1037,7 +1245,7 @@ NAMA PEMANGGIL : ${document.getElementById('callerName').value||'-'}
 NOMBOR : ${document.getElementById('callerPhone').value||'-'}
 ALAMAT : ${document.getElementById('address').value||'-'}
 
-TERIMA PANGGILAN : ${fmtFull('tTerima')}
+TERIMA PANGGILAN : ${fmtTime('tTerima')}
 JENTERA KELUAR : ${fmtTime('tKeluar')}
 SAMPAI LOKASI : ${fmtTime('tSampai')}
 JARAK : ${document.getElementById('distance').value||'-'}
@@ -1048,7 +1256,7 @@ OPERASI TAMAT : ${fmtTime('tTamat')}
 BERTOLAK BALIK KE BALAI : ${fmtTime('tBertolak')}
 SAMPAI DI BALAI : ${fmtTime('tBalai')}
 
-KEANGGOTAAN PBS TMA:
+KEANGGOTAAN PBS TMA: ${document.getElementById('totalHeadcount')?.value||'-'}
 
 ${vBlock(VEHICLES[0],'v1')}
 ${vBlock(VEHICLES[1],'v2')}
@@ -1145,7 +1353,7 @@ async function editMem(i,field,val){
   await setData('members',MEMBERS);
 }
 async function delMember(i){
-  if(!confirm(`确认删除队员 "${MEMBERS[i].name}"？`))return;
+  if(!confirm(ui(`确认删除队员 "${MEMBERS[i].name}"？`,`Delete member "${MEMBERS[i].name}"?`)))return;
   MEMBERS.splice(i,1);
   await setData('members',MEMBERS);
   renderMemberTable(); renderVehicles();
@@ -1153,7 +1361,10 @@ async function delMember(i){
 async function toggleSecretary(i){
   const m=MEMBERS[i];
   const willBe = !m.isSecretary;
-  if(!confirm(willBe?`确认把 "${m.name}" 设为秘书？\n（秘书可查看所有队员资料，但看不到用户名/密码，也不能修改）`:`确认取消 "${m.name}" 的秘书身份？`))return;
+  const prompt=willBe
+    ?ui(`确认把 "${m.name}" 设为秘书？\n（秘书可查看所有队员资料，但看不到用户名/密码，也不能修改）`,`Make "${m.name}" a secretary?\n(Secretaries can view all member details, but cannot see usernames/passwords or make changes.)`)
+    :ui(`确认取消 "${m.name}" 的秘书身份？`,`Remove secretary access from "${m.name}"?`);
+  if(!confirm(prompt))return;
   MEMBERS[i].isSecretary = willBe;
   await setData('members',MEMBERS);
   renderMemberTable();
@@ -1328,7 +1539,7 @@ async function changeMyPassword() {
 // 队员查看自己的资料（资料只读，但可改密码）
 function openMyInfo() {
   const idx = MEMBERS.findIndex(m => m.name === currentUser);
-  if (idx === -1) { alert('找不到你的资料，请联系管理员'); return; }
+  if (idx === -1) { alert(ui('找不到你的资料，请联系管理员','Your profile could not be found. Please contact an administrator.')); return; }
   curDetailIdx = idx;
   detailEditable = false;  // 资料只读
   isMyOwnInfo = true;      // 但允许改密码
@@ -1427,7 +1638,7 @@ function renderIncidentAdmin(){
   });
 }
 async function delIncident(i){
-  if(!confirm(`确认删除 "${INCIDENTS[i].zh}"？`))return;
+  if(!confirm(ui(`确认删除 "${INCIDENTS[i].zh}"？`,`Delete "${INCIDENTS[i].zh}"?`)))return;
   if(selectedInc===i)selectedInc=null; else if(selectedInc>i)selectedInc--;
   INCIDENTS.splice(i,1);
   await setData('incidents',INCIDENTS);
@@ -1484,7 +1695,7 @@ function viewRecord(i){
   if(w){w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>报告</title></head><body style="font-family:monospace;font-size:13px;padding:20px"><pre style="white-space:pre-wrap;line-height:1.7">${r.report||'无内容'}</pre></body></html>`);w.document.close();}
 }
 async function delRecord(i){
-  if(!confirm('确认删除此案件记录？此操作不可恢复。'))return;
+  if(!confirm(ui('确认删除此案件记录？此操作不可恢复。','Delete this incident record? This action cannot be undone.')))return;
   const r=RECORDS_CACHE[i];
   await deleteRecord(r._fbKey, r._localIdx);
   RECORDS_CACHE.splice(i,1);
@@ -1565,12 +1776,12 @@ function renderAdminTable() {
 async function editAdmin(i, field, val) {
   val = val.trim();
   if (field === 'username') {
-    if (!val) { alert('用户名不能为空'); renderAdminTable(); return; }
+    if (!val) { alert(ui('用户名不能为空','Username cannot be empty.')); renderAdminTable(); return; }
     if (ADMINS.some((a,j)=>j!==i && a.username===val) || MEMBERS.some(m=>m.username===val)) {
-      alert(`用户名 "${val}" 已被使用`); renderAdminTable(); return;
+      alert(ui(`用户名 "${val}" 已被使用`,`Username "${val}" is already in use.`)); renderAdminTable(); return;
     }
   }
-  if (field === 'password' && !val) { alert('密码不能为空'); renderAdminTable(); return; }
+  if (field === 'password' && !val) { alert(ui('密码不能为空','Password cannot be empty.')); renderAdminTable(); return; }
   ADMINS[i][field] = val;
   // If this row is the currently logged-in admin, keep reference in sync
   if (currentAdmin && ADMINS[i].username === currentAdmin.username) currentAdmin = ADMINS[i];
@@ -1581,7 +1792,7 @@ async function toggleSuper(i) {
   // Prevent removing the last super admin
   if (ADMINS[i].super) {
     const superCount = ADMINS.filter(a=>a.super).length;
-    if (superCount <= 1) { alert('❌ 必须保留至少一个主管理员！'); return; }
+    if (superCount <= 1) { alert(ui('❌ 必须保留至少一个主管理员！','❌ At least one super administrator is required.')); return; }
   }
   ADMINS[i].super = !ADMINS[i].super;
   await setData('admins', ADMINS);
@@ -1589,9 +1800,9 @@ async function toggleSuper(i) {
 }
 
 async function delAdmin(i) {
-  if (ADMINS[i].username === currentAdmin.username) { alert('不能删除自己'); return; }
-  if (ADMINS[i].super && ADMINS.filter(a=>a.super).length<=1) { alert('❌ 必须保留至少一个主管理员！'); return; }
-  if (!confirm(`确认删除管理员 "${ADMINS[i].name||ADMINS[i].username}"？`)) return;
+  if (ADMINS[i].username === currentAdmin.username) { alert(ui('不能删除自己','You cannot delete your own account.')); return; }
+  if (ADMINS[i].super && ADMINS.filter(a=>a.super).length<=1) { alert(ui('❌ 必须保留至少一个主管理员！','❌ At least one super administrator is required.')); return; }
+  if (!confirm(ui(`确认删除管理员 "${ADMINS[i].name||ADMINS[i].username}"？`,`Delete administrator "${ADMINS[i].name||ADMINS[i].username}"?`))) return;
   ADMINS.splice(i,1);
   await setData('admins', ADMINS);
   renderAdminTable();
